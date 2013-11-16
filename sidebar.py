@@ -408,95 +408,15 @@ class OptionsWidget(QtGui.QWidget):
         QtGui.QWidget.__init__(self)
         self.project = project
         
-class ToolsWidget(QtGui.QWidget):
-    """ side widget cantaining tools buttons """
-    def __init__(self, project):
-        QtGui.QWidget.__init__(self)
-        self.project = project
-
-        ### tools buttons ###
-        self.penB = Button("pen", "icons/tool_pen.png", self.penClicked, True)
-        self.penB.setChecked(True)
-        self.pipetteB = Button("pipette", "icons/tool_pipette.png", self.pipetteClicked, True)
-        self.fillB = Button("fill", "icons/tool_fill.png", self.fillClicked, True)
         self.optionFill = OptionFill(self, self.project)
-        self.moveB = Button("move", "icons/tool_move.png", self.moveClicked, True)
-        self.selectB = Button("select", "icons/tool_select.png", self.selectClicked, True)
         self.optionSelect = OptionSelect(self, self.project)
 
         ### Layout ###
-        tools = QtGui.QHBoxLayout()
-        tools.setSpacing(0)
-        tools.addWidget(self.penB)
-        tools.addWidget(self.pipetteB)
-        tools.addWidget(self.fillB)
-        tools.addWidget(self.moveB)
-        tools.addWidget(self.selectB)
-        tools.addStretch()
-        self.layout = QtGui.QGridLayout()
-        self.layout.setSpacing(4)
-        self.layout.addLayout(tools, 0, 0, 4, 1)
-        self.layout.addWidget(self.optionSelect, 0, 1)
-        self.layout.addWidget(self.optionFill, 0, 1)
+        self.layout = QtGui.QVBoxLayout()
+        self.layout.setSpacing(0)
+        self.layout.addWidget(self.optionFill)
         self.optionFill.hide()
-        self.layout.addWidget(self.optionSelect, 0, 1)
+        self.layout.addWidget(self.optionSelect)
         self.optionSelect.hide()
-        self.layout.setContentsMargins(6, 0, 6, 0)
-        self.setLayout(self.layout)
-        
-    ######## Tools #####################################################
-    def penClicked(self):
-        self.project.tool = "pen"
-        self.penB.setChecked(True)
-        self.pipetteB.setChecked(False)
-        self.fillB.setChecked(False)
-        self.moveB.setChecked(False)
-        self.selectB.setChecked(False)
-        self.project.toolChangedSign.emit()
-        self.optionFill.hide()
-        self.optionSelect.hide()
-
-    def pipetteClicked(self):
-        self.project.tool = "pipette"
-        self.penB.setChecked(False)
-        self.fillB.setChecked(False)
-        self.pipetteB.setChecked(True)
-        self.moveB.setChecked(False)
-        self.selectB.setChecked(False)
-        self.project.toolChangedSign.emit()
-        self.optionFill.hide()
-        self.optionSelect.hide()
-
-    def fillClicked(self):
-        self.project.tool = "fill"
-        self.fillB.setChecked(True)
-        self.pipetteB.setChecked(False)
-        self.penB.setChecked(False)
-        self.moveB.setChecked(False)
-        self.selectB.setChecked(False)
-        self.project.toolChangedSign.emit()
-        self.optionFill.show()
-        self.optionSelect.hide()
-
-    def moveClicked(self):
-        self.project.tool = "move"
-        self.fillB.setChecked(False)
-        self.pipetteB.setChecked(False)
-        self.penB.setChecked(False)
-        self.moveB.setChecked(True)
-        self.selectB.setChecked(False)
-        self.project.toolChangedSign.emit()
-        self.optionFill.hide()
-        self.optionSelect.hide()
-
-    def selectClicked(self):
-        self.project.tool = "select"
-        self.fillB.setChecked(False)
-        self.pipetteB.setChecked(False)
-        self.penB.setChecked(False)
-        self.moveB.setChecked(False)
-        self.selectB.setChecked(True)
-        self.project.toolChangedSign.emit()
-        self.optionFill.hide()
-        self.optionSelect.show()
-        
+        self.layout.addStretch()
+        self.setLayout(self.layout)        

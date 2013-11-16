@@ -30,7 +30,6 @@ from PyQt4 import QtGui
 
 from data import Project
 from timeline import TimelineWidget
-from sidebar import ToolsWidget
 from sidebar import PaletteWidget
 from sidebar import ContextWidget
 from sidebar import OptionsWidget
@@ -350,7 +349,6 @@ class MainWindow(QtGui.QMainWindow):
         QtGui.QApplication.setApplicationName("pixeditor")
 
         self.project = Project(self)
-        self.toolsWidget = ToolsWidget(self.project)
         self.contextWidget = ContextWidget(self.project)
         self.optionsWidget = OptionsWidget(self.project)
         self.paletteWidget = PaletteWidget(self.project)
@@ -359,45 +357,63 @@ class MainWindow(QtGui.QMainWindow):
         
         self.updateTitle()
         self.project.updateTitleSign.connect(self.updateTitle)
-        self.setDockNestingEnabled(True)
-
-        ### layout #####################################################
-        #splitter = QtGui.QSplitter()
-        #splitter.addWidget(self.toolsWidget)
-        #splitter.addWidget(self.scene)
-        #splitter2 = QtGui.QSplitter(QtCore.Qt.Vertical)
-        #splitter2.addWidget(splitter)
-        #splitter2.addWidget(self.timelineWidget)
-        #self.setCentralWidget(splitter2)
         
         self.setDockNestingEnabled(True)
         self.setCentralWidget(self.scene)
         
-        toolsDock = QtGui.QDockWidget("tools")
-        toolsDock.setWidget(self.toolsWidget)
-        toolsDock.setObjectName("toolsDock")
-        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, toolsDock)
+        #toolsDock = QtGui.QDockWidget("Tools")
+        #toolsDock.setWidget(self.toolsWidget)
+        #toolsDock.setObjectName("toolsDock")
+        #self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, toolsDock)
 
-        contextDock = QtGui.QDockWidget("context")
+        contextDock = QtGui.QDockWidget("Context")
         contextDock.setWidget(self.contextWidget)
         contextDock.setObjectName("contextDock")
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, contextDock)
 
-        optionsDock = QtGui.QDockWidget("options")
+        optionsDock = QtGui.QDockWidget("Options")
         optionsDock.setWidget(self.optionsWidget)
         optionsDock.setObjectName("optionsDock")
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, optionsDock)
 
-        paletteDock = QtGui.QDockWidget("palette")
+        paletteDock = QtGui.QDockWidget("Palette")
         paletteDock.setWidget(self.paletteWidget)
         paletteDock.setObjectName("paletteDock")
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, paletteDock)
         
-        timelineDock = Dock("timeline")
+        timelineDock = Dock("Timeline")
         timelineDock.setWidget(self.timelineWidget)
         timelineDock.setObjectName("timelineDock")
         timelineDock.setFeatures(QtGui.QDockWidget.DockWidgetVerticalTitleBar | QtGui.QDockWidget.AllDockWidgetFeatures)
         self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, timelineDock)
+
+        ### Toolbar ###
+        toolActions = QtGui.QActionGroup(self)
+        toolActions.setExclusive(True)
+        penToolAction = QtGui.QAction(QtGui.QIcon("icons/tool_pen.png"), "Pen", toolActions)
+        penToolAction.setCheckable(True)
+        penToolAction.setChecked(True)
+        penToolAction.triggered.connect(self.penToolAction)
+        pipetteToolAction = QtGui.QAction(QtGui.QIcon("icons/tool_pipette.png"), "Pipette", toolActions)
+        pipetteToolAction.setCheckable(True)
+        pipetteToolAction.triggered.connect(self.pipetteToolAction)
+        fillToolAction = QtGui.QAction(QtGui.QIcon("icons/tool_fill.png"), "Fill", toolActions)
+        fillToolAction.setCheckable(True)
+        fillToolAction.triggered.connect(self.fillToolAction)
+        moveToolAction = QtGui.QAction(QtGui.QIcon("icons/tool_move.png"), "Move", toolActions)
+        moveToolAction.setCheckable(True)
+        moveToolAction.triggered.connect(self.moveToolAction)
+        selectToolAction = QtGui.QAction(QtGui.QIcon("icons/tool_select.png"), "Select", toolActions)
+        selectToolAction.setCheckable(True)
+        selectToolAction.triggered.connect(self.selectToolAction)
+        toolbar = QtGui.QToolBar("Tools")
+        toolbar.addAction(penToolAction)
+        toolbar.addAction(pipetteToolAction)
+        toolbar.addAction(fillToolAction)
+        toolbar.addAction(moveToolAction)
+        toolbar.addAction(selectToolAction)
+        toolbar.setObjectName("toolsToolbar")
+        self.addToolBar(toolbar)
 
         ### File menu ###
         menubar = self.menuBar()
@@ -458,17 +474,28 @@ class MainWindow(QtGui.QMainWindow):
         editMenu.addAction(copyAction)
         editMenu.addAction(pasteAction)
         
+        ### tools menu ###
+        toolsMenu = menubar.addMenu('Tools')
+        toolsMenu.addAction(penToolAction)
+        toolsMenu.addAction(pipetteToolAction)
+        toolsMenu.addAction(fillToolAction)
+        toolsMenu.addAction(moveToolAction)
+        toolsMenu.addAction(selectToolAction)
+        
         ### view menu ###
         viewMenu = menubar.addMenu('View')
+        toolbars = self.findChildren(QtGui.QToolBar)
+        for toolbar in toolbars:
+            viewMenu.addAction(toolbar.toggleViewAction())
+        viewMenu.addSeparator()
         dockWidgets = self.findChildren(QtGui.QDockWidget)
         for dock in dockWidgets:
             viewMenu.addAction(dock.toggleViewAction())
         viewMenu.addSeparator()
-        lockDocksAction = QtGui.QAction('Lock Docks', self)
-        lockDocksAction.setCheckable(True)
-        #lockDocksAction.triggered.connect(self.lockDocksAction(lockDocksAction))
-        lockDocksAction.triggered.connect(lambda: self.lockDocksAction(lockDocksAction))
-        viewMenu.addAction(lockDocksAction)
+        lockLayoutAction = QtGui.QAction('Lock Layout', self)
+        lockLayoutAction.setCheckable(True)
+        lockLayoutAction.triggered.connect(lambda: self.lockLayoutAction(lockLayoutAction))
+        viewMenu.addAction(lockLayoutAction)
         
         ### project menu ###
         newAction = QtGui.QAction('New', self)
@@ -520,7 +547,20 @@ class MainWindow(QtGui.QMainWindow):
         shortcut5.activated.connect(self.timelineWidget.playPauseClicked)
 
         ### settings ###
+        self.readSettings()
+
+        self.show()
+        
+    def writeSettings(self):
         settings = QtCore.QSettings()
+        settings.beginGroup("mainWindow")
+        settings.setValue("geometry", self.saveGeometry())
+        settings.setValue("windowState", self.saveState())
+        settings.endGroup()
+        
+    def readSettings(self):
+        settings = QtCore.QSettings()
+        settings.beginGroup("mainWindow")
         try:
             self.restoreGeometry(settings.value("geometry"))
         except TypeError:
@@ -529,12 +569,39 @@ class MainWindow(QtGui.QMainWindow):
             self.restoreState(settings.value("windowState"))
         except TypeError:
             pass # no state to restore so leave as is
+        settings.endGroup()
+        
+    ######## Toolbar #####################################################
+    def penToolAction(self):
+        self.project.tool = "pen"
+        self.project.toolChangedSign.emit()
+        self.optionsWidget.optionFill.hide()
+        self.optionsWidget.optionSelect.hide()
 
-        self.show()
-        
-    def showEvent(self, event):
-        self.toolsWidget.setFixedWidth(self.toolsWidget.width())
-        
+    def pipetteToolAction(self):
+        self.project.tool = "pipette"
+        self.project.toolChangedSign.emit()
+        self.optionsWidget.optionFill.hide()
+        self.optionsWidget.optionSelect.hide()
+
+    def fillToolAction(self):
+        self.project.tool = "fill"
+        self.project.toolChangedSign.emit()
+        self.optionsWidget.optionFill.show()
+        self.optionsWidget.optionSelect.hide()
+
+    def moveToolAction(self):
+        self.project.tool = "move"
+        self.project.toolChangedSign.emit()
+        self.optionsWidget.optionFill.hide()
+        self.optionsWidget.optionSelect.hide()
+
+    def selectToolAction(self):
+        self.project.tool = "select"
+        self.project.toolChangedSign.emit()
+        self.optionsWidget.optionFill.hide()
+        self.optionsWidget.optionSelect.show()
+
     ######## File menu #################################################
     def openAction(self):
         xml, url = open_pix(self.project.dirUrl)
@@ -596,11 +663,8 @@ class MainWindow(QtGui.QMainWindow):
         export_png(self.project, self.project.dirUrl)
     
     def closeEvent(self, event):
-        settings = QtCore.QSettings()
-        settings.setValue("geometry", self.saveGeometry())
-        settings.setValue("windowState", self.saveState())
+        self.writeSettings()
         self.exitAction()
-        #QMainWindow.closeEvent(self, event)
         
     def exitAction(self):
         message = QtGui.QMessageBox()
@@ -611,26 +675,36 @@ class MainWindow(QtGui.QMainWindow):
         message.addButton("Yes", QtGui.QMessageBox.AcceptRole)
         ret = message.exec_();
         if ret:
-            #settings = QtCore.QSettings()
-            #settings.setValue("DOCK_LOCATIONS", self.saveState())
             QtGui.qApp.quit()
         
     ######## View menu ##############################################
-    def lockDocksAction(self, action):
-        dockWidgets = self.findChildren(QtGui.QDockWidget)
-        for dock in dockWidgets:
+    def lockLayoutAction(self, action):
+        widgets = self.findChildren(QtGui.QDockWidget) + self.findChildren(QtGui.QToolBar)
+        for widget in widgets:
             if action.isChecked():
-                if dock.isFloating():
-                    dock.setTitleBarWidget(None)
-                    dock.setAllowedAreas(QtCore.Qt.NoDockWidgetArea)
-                    dock.setFeatures(QtGui.QDockWidget.DockWidgetFloatable)
+                if widget.isFloating():
+                    if isinstance(widget, QtGui.QDockWidget):
+                        widget.setTitleBarWidget(None)
+                        widget.setFeatures(QtGui.QDockWidget.DockWidgetFloatable)
+                        widget.setAllowedAreas(QtCore.Qt.NoDockWidgetArea)
+                    elif isinstance(widget, QtGui.QToolBar):
+                        widget.setAllowedAreas(QtCore.Qt.NoToolBarArea)
                 else:
-                    dock.setTitleBarWidget(QtGui.QWidget())
-                    dock.setFeatures(QtGui.QDockWidget.NoDockWidgetFeatures)
+                    if isinstance(widget, QtGui.QDockWidget):
+                        widget.setTitleBarWidget(QtGui.QWidget())
+                        widget.setFeatures(QtGui.QDockWidget.NoDockWidgetFeatures)
+                    elif isinstance(widget, QtGui.QToolBar):
+                        widget.setFloatable(False)
+                        widget.setMovable(False)
             else:
-                dock.setFeatures(QtGui.QDockWidget.AllDockWidgetFeatures)
-                dock.setTitleBarWidget(None)
-                dock.setAllowedAreas(QtCore.Qt.AllDockWidgetAreas)
+                if isinstance(widget, QtGui.QDockWidget):
+                    widget.setFeatures(QtGui.QDockWidget.AllDockWidgetFeatures)
+                    widget.setTitleBarWidget(None)
+                    widget.setAllowedAreas(QtCore.Qt.AllDockWidgetAreas)
+                elif isinstance(widget, QtGui.QToolBar):
+                    widget.setFloatable(True)
+                    widget.setMovable(True)
+                    widget.setAllowedAreas(QtCore.Qt.AllToolBarAreas)
     
     ######## Project menu ##############################################
     def newAction(self):
