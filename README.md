@@ -16,7 +16,7 @@ Shift clic to draw lines
 Ctrl clic to select color  
 Right clic to draw with alpha  
 
-![alt screenshot](https://raw.github.com/pops/pixeditor/master/screenshot.png "screenshot")
+![alt screenshot](screenshot.png "screenshot")
 
 
 install
