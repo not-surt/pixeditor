@@ -94,11 +94,11 @@ class PaletteCanvas(QtGui.QWidget):
             if (event.pos() - self.dragStartPosition).manhattanLength() >= QtGui.QApplication.startDragDistance():
                 ### initiate drag and drop ###
                 gridX, gridY = self.swatchPointToGrid(self.dragStartPosition.x(), self.dragStartPosition.y())
-                index = self.swatchGridToIndex(math.floor(gridX), math.floor(gridY))
-                if index is not None and index < len(self.parent.project.colorTable):
+                self.dragIndex = self.swatchGridToIndex(math.floor(gridX), math.floor(gridY))
+                if self.dragIndex is not None and self.dragIndex < len(self.parent.project.colorTable):
                     drag = QtGui.QDrag(self)
                     mimeData = QtCore.QMimeData()
-                    mimeData.setColorData(QtGui.QColor.fromRgba(self.parent.project.colorTable[index]))
+                    mimeData.setColorData(QtGui.QColor.fromRgba(self.parent.project.colorTable[self.dragIndex]))
                     drag.setMimeData(mimeData)
                     dropAction = drag.exec()
         
@@ -126,8 +126,16 @@ class PaletteCanvas(QtGui.QWidget):
         gridX, gridY = self.swatchPointToGrid(event.pos().x(), event.pos().y())
         index = self.swatchGridToIndex(math.floor(gridX), math.floor(gridY))
         if index is not None and index < len(self.parent.project.colorTable):
-            self.parent.project.colorTable[index] = event.mimeData().colorData().rgba()
-            self.parent.project.updatePaletteSign.emit()
+            if event.keyboardModifiers() & QtCore.Qt.ShiftModifier:
+                self.parent.project.colorTable[index] = event.mimeData().colorData().rgba()
+                self.parent.project.updatePaletteSign.emit()
+            elif event.keyboardModifiers() & QtCore.Qt.ControlModifier:
+                pass
+            else:
+                temp = self.parent.project.colorTable[index]
+                self.parent.project.colorTable[index] = event.mimeData().colorData().rgba()
+                self.parent.project.colorTable[self.dragIndex] = temp
+                self.parent.project.updatePaletteSign.emit()
         event.acceptProposedAction()
     
     def getItem(self, x, y):
