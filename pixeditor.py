@@ -38,24 +38,26 @@ from widget import Dock
 from import_export import *
 from widget import Background
 
+
 class SelectionRect(QtGui.QGraphicsRectItem):
     """ Rect item used in scene to display a selection """
+
     def __init__(self, pos):
         QtGui.QGraphicsRectItem.__init__(self, pos.x(), pos.y(), 1, 1)
         self.startX = pos.x()
         self.startY = pos.y()
-        
+
         self.setPen(QtGui.QPen(QtGui.QColor("black"), 0))
         dashPen = QtGui.QPen(QtGui.QColor("white"), 0, QtCore.Qt.DashLine)
         dashPen.setDashPattern([6, 6])
         self.dash = QtGui.QGraphicsRectItem(self.rect(), self)
         self.dash.setPen(dashPen)
-        
+
     def scale(self, pos):
         rect = QtCore.QRectF(self.startX, self.startY, pos.x() - self.startX, pos.y() - self.startY)
         self.setRect(rect)
         self.dash.setRect(rect)
-        
+
     def getRect(self):
         """ return a QRect with positive width and height """
         w = int(self.rect().width())
@@ -71,12 +73,13 @@ class SelectionRect(QtGui.QGraphicsRectItem):
         else:
             y = int(self.rect().y())
         return QtCore.QRect(x, y, w, h)
-        
-        
+
+
 class Scene(QtGui.QGraphicsView):
     """ widget used to display the layers, onionskin, pen, background
         it can zoom with mouseWheel, pan with mouseMiddleClic
         it send mouseRightClic info to the current Canvas"""
+
     def __init__(self, project):
         QtGui.QGraphicsView.__init__(self)
         self.project = project
@@ -86,15 +89,15 @@ class Scene(QtGui.QGraphicsView):
         self.scene.setItemIndexMethod(QtGui.QGraphicsScene.NoIndex)
         self.setScene(self.scene)
         self.setTransformationAnchor(
-                QtGui.QGraphicsView.AnchorUnderMouse)
+            QtGui.QGraphicsView.AnchorUnderMouse)
         self.setResizeAnchor(QtGui.QGraphicsView.AnchorViewCenter)
         self.setMinimumSize(400, 400)
-        self.scene.setSceneRect(0, 0, 
-                    self.project.size.width(), self.project.size.height())
+        self.scene.setSceneRect(0, 0,
+                                self.project.size.width(), self.project.size.height())
         # background
         self.setBackgroundBrush(QtGui.QBrush(self.project.bgColor))
         self.bg = self.scene.addPixmap(
-                    Background(self.project.size, self.project.bgPattern))
+            Background(self.project.size, self.project.bgPattern))
         # frames
         self.itemList = []
         self.canvasList = []
@@ -142,28 +145,28 @@ class Scene(QtGui.QGraphicsView):
                     p = QtGui.QGraphicsRectItem(i[0], i[1], 1, 1, self.penItem)
                     p.setPen(pen)
                     p.setBrush(brush)
-                
+
     def updateBackground(self):
         self.setBackgroundBrush(QtGui.QBrush(self.project.bgColor))
-        self.bg.setPixmap(Background(self.project.size, 
+        self.bg.setPixmap(Background(self.project.size,
                                      self.project.bgPattern))
-        
+
     def changeFrame(self):
         self.canvasList = self.project.timeline.getCanvasList(self.project.curFrame)
         # resize scene if needed
         if self.scene.sceneRect().size().toSize() != self.project.size:
-            self.scene.setSceneRect(0, 0, 
-                    self.project.size.width(), self.project.size.height())
+            self.scene.setSceneRect(0, 0,
+                                    self.project.size.width(), self.project.size.height())
             self.updateBackground()
-        # add item for layer if needed
+            # add item for layer if needed
         for i in range(len(self.itemList), len(self.canvasList)):
             self.itemList.append(self.scene.addPixmap(QtGui.QPixmap(1, 1)))
             self.itemList[i].setZValue(100 - i)
-        # remove item for layer if needed
+            # remove item for layer if needed
         for i in range(len(self.canvasList), len(self.itemList)):
             self.scene.removeItem(self.itemList[i])
             del self.itemList[i]
-        # updates canvas
+            # updates canvas
         for n, i in enumerate(self.canvasList):
             if i and self.project.timeline[n].visible:
                 self.itemList[n].setVisible(True)
@@ -171,18 +174,18 @@ class Scene(QtGui.QGraphicsView):
                 self.itemList[n].update()
             else:
                 self.itemList[n].setVisible(False)
-        # onionskin
+            # onionskin
         layer = self.project.timeline[self.project.curLayer]
-        if (not self.project.playing and self.project.onionSkinPrev and 
-            self.project.timeline[self.project.curLayer].visible):
+        if (not self.project.playing and self.project.onionSkinPrev and
+                self.project.timeline[self.project.curLayer].visible):
             frame = self.project.curFrame
             prev = False
             while 0 <= frame < len(layer):
                 if layer[frame]:
                     if frame == 0 and self.project.loop:
-                        prev = layer.getCanvas(len(layer)-1)
+                        prev = layer.getCanvas(len(layer) - 1)
                     else:
-                        prev = layer.getCanvas(frame-1)
+                        prev = layer.getCanvas(frame - 1)
                     if prev and prev != layer.getCanvas(self.project.curFrame):
                         self.onionPrevItem.pixmap().convertFromImage(prev)
                         self.onionPrevItem.show()
@@ -194,8 +197,8 @@ class Scene(QtGui.QGraphicsView):
                 self.onionPrevItem.hide()
         else:
             self.onionPrevItem.hide()
-        if (not self.project.playing and self.project.onionSkinNext and 
-            self.project.timeline[self.project.curLayer].visible):
+        if (not self.project.playing and self.project.onionSkinNext and
+                self.project.timeline[self.project.curLayer].visible):
             frame = self.project.curFrame + 1
             nex = False
             while 0 <= frame < len(layer):
@@ -205,8 +208,8 @@ class Scene(QtGui.QGraphicsView):
                     break
                 frame += 1
             else:
-                if (frame == len(layer) and self.project.loop and 
-                    layer[0] != layer.getCanvas(self.project.curFrame)):
+                if (frame == len(layer) and self.project.loop and
+                            layer[0] != layer.getCanvas(self.project.curFrame)):
                     self.onionNextItem.pixmap().convertFromImage(layer[0])
                     self.onionNextItem.show()
                 else:
@@ -244,15 +247,15 @@ class Scene(QtGui.QGraphicsView):
             self.setDragMode(QtGui.QGraphicsView.NoDrag)
         # draw on canvas
         elif (self.project.timeline[l].visible
-                and (event.buttons() == QtCore.Qt.LeftButton 
-                    or event.buttons() == QtCore.Qt.RightButton)
-                and self.project.tool == "pen" 
-                or self.project.tool == "pipette" 
-                or self.project.tool == "fill"):
+              and (event.buttons() == QtCore.Qt.LeftButton
+                   or event.buttons() == QtCore.Qt.RightButton)
+              and self.project.tool == "pen"
+              or self.project.tool == "pipette"
+              or self.project.tool == "fill"):
             pos = self.pointToInt(self.mapToScene(event.pos()))
-            if not self.canvasList[l] and self.project.tool == "pen" :
+            if not self.canvasList[l] and self.project.tool == "pen":
                 self.project.timeline[self.project.curLayer].insertCanvas(
-                        self.project.curFrame, self.project.makeCanvas())
+                    self.project.curFrame, self.project.makeCanvas())
                 self.project.updateTimelineSign.emit()
                 self.project.updateViewSign.emit()
             self.canvasList[l].clic(pos, event.buttons())
@@ -260,7 +263,7 @@ class Scene(QtGui.QGraphicsView):
             self.itemList[l].update()
         # move or select
         elif (self.project.timeline[l].visible and self.canvasList[l]
-                and event.buttons() == QtCore.Qt.LeftButton):
+              and event.buttons() == QtCore.Qt.LeftButton):
             pos = self.pointToInt(self.mapToScene(event.pos()))
             if self.project.tool == "move":
                 self.lastPos = pos
@@ -279,30 +282,30 @@ class Scene(QtGui.QGraphicsView):
         if event.buttons() == QtCore.Qt.MidButton:
             globalPos = QtGui.QCursor.pos()
             self.horizontalScrollBar().setValue(self.startScroll[0] -
-                    globalPos.x() + self.lastPos.x())
+                                                globalPos.x() + self.lastPos.x())
             self.verticalScrollBar().setValue(self.startScroll[1] -
-                    globalPos.y() + self.lastPos.y())
+                                              globalPos.y() + self.lastPos.y())
         # draw on canvas
-        elif (self.project.timeline[l].visible and self.canvasList[l] 
-                and (event.buttons() == QtCore.Qt.LeftButton 
-                    or event.buttons() == QtCore.Qt.RightButton)
-                and self.project.tool == "pen"
-                or self.project.tool == "pipette" 
-                or self.project.tool == "fill"):
+        elif (self.project.timeline[l].visible and self.canvasList[l]
+              and (event.buttons() == QtCore.Qt.LeftButton
+                   or event.buttons() == QtCore.Qt.RightButton)
+              and self.project.tool == "pen"
+              or self.project.tool == "pipette"
+              or self.project.tool == "fill"):
             pos = self.pointToInt(self.mapToScene(event.pos()))
             self.canvasList[l].move(pos, event.buttons())
             self.itemList[l].pixmap().convertFromImage(self.canvasList[l])
             self.itemList[l].update()
         # move or select
         elif (self.project.timeline[l].visible and self.canvasList[l]
-                and event.buttons() == QtCore.Qt.LeftButton):
+              and event.buttons() == QtCore.Qt.LeftButton):
             pos = self.pointToInt(self.mapToScene(event.pos()))
             if self.project.tool == "move":
                 dif = pos - self.lastPos
                 intPos = self.pointToInt(self.itemList[l].pos())
                 self.itemList[l].setPos(QtCore.QPointF(intPos + dif))
                 self.lastPos = pos
-            elif self.project.tool == "select": 
+            elif self.project.tool == "select":
                 self.selRect.scale(pos)
         else:
             return QtGui.QGraphicsView.mouseMoveEvent(self, event)
@@ -312,14 +315,14 @@ class Scene(QtGui.QGraphicsView):
             l = self.project.curLayer
             if self.project.tool == "move" and self.canvasList[l] and self.itemList[l].pos():
                 self.project.saveToUndo("canvas")
-                offset = (int(self.itemList[l].pos().x()), 
+                offset = (int(self.itemList[l].pos().x()),
                           int(self.itemList[l].pos().y()))
                 self.canvasList[l].loadFromList(
-                                    self.canvasList[l].returnAsList(),
-                                    self.canvasList[l].width(), offset)
+                    self.canvasList[l].returnAsList(),
+                    self.canvasList[l].width(), offset)
                 self.itemList[l].setPos(QtCore.QPointF(0, 0))
                 self.changeFrame()
-            elif self.project.tool == "select": 
+            elif self.project.tool == "select":
                 rect = self.selRect.getRect()
                 if rect.isValid():
                     sel = self.canvasList[l].returnAsMatrix(rect)
@@ -342,9 +345,10 @@ class Scene(QtGui.QGraphicsView):
 
 class MainWindow(QtGui.QMainWindow):
     """ Main windows of the application """
+
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
-        
+
         QtGui.QApplication.setOrganizationName("z-uo")
         QtGui.QApplication.setApplicationName("pixeditor")
 
@@ -354,13 +358,13 @@ class MainWindow(QtGui.QMainWindow):
         self.paletteWidget = PaletteWidget(self.project)
         self.timelineWidget = TimelineWidget(self.project)
         self.scene = Scene(self.project)
-        
+
         self.updateTitle()
         self.project.updateTitleSign.connect(self.updateTitle)
-        
-        self.setDockNestingEnabled(True)
+
         self.setCentralWidget(self.scene)
-        
+        self.setDockNestingEnabled(True)
+
         #toolsDock = QtGui.QDockWidget("Tools")
         #toolsDock.setWidget(self.toolsWidget)
         #toolsDock.setObjectName("toolsDock")
@@ -380,7 +384,7 @@ class MainWindow(QtGui.QMainWindow):
         paletteDock.setWidget(self.paletteWidget)
         paletteDock.setObjectName("paletteDock")
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, paletteDock)
-        
+
         timelineDock = Dock("Timeline")
         timelineDock.setWidget(self.timelineWidget)
         timelineDock.setObjectName("timelineDock")
@@ -414,6 +418,11 @@ class MainWindow(QtGui.QMainWindow):
         toolbar.addAction(selectToolAction)
         toolbar.setObjectName("toolsToolbar")
         self.addToolBar(toolbar)
+        penToolAction.setShortcut('1')
+        pipetteToolAction.setShortcut('2')
+        fillToolAction.setShortcut('3')
+        moveToolAction.setShortcut('4')
+        selectToolAction.setShortcut('5')
 
         ### File menu ###
         menubar = self.menuBar()
@@ -424,7 +433,7 @@ class MainWindow(QtGui.QMainWindow):
         saveAction = QtGui.QAction('Save', self)
         saveAction.triggered.connect(self.saveAction)
         saveAction.setShortcut('Ctrl+S')
-        
+
         importNewAction = QtGui.QAction('Import as new', self)
         importNewAction.triggered.connect(self.importAsNewAction)
         importLayerAction = QtGui.QAction('Import as layer', self)
@@ -432,11 +441,11 @@ class MainWindow(QtGui.QMainWindow):
         exportAction = QtGui.QAction('Export', self)
         exportAction.triggered.connect(self.exportAction)
         exportAction.setShortcut('Ctrl+E')
-        
+
         exitAction = QtGui.QAction('Exit', self)
         exitAction.triggered.connect(self.exitAction)
         exitAction.setShortcut('Ctrl+Q')
-        
+
         fileMenu = menubar.addMenu('File')
         fileMenu.addAction(openAction)
         fileMenu.addAction(saveAsAction)
@@ -447,7 +456,7 @@ class MainWindow(QtGui.QMainWindow):
         fileMenu.addAction(exportAction)
         fileMenu.addSeparator()
         fileMenu.addAction(exitAction)
-        
+
         ### Edit menu ###
         undoAction = QtGui.QAction('Undo', self)
         undoAction.triggered.connect(self.project.undo)
@@ -455,7 +464,7 @@ class MainWindow(QtGui.QMainWindow):
         redoAction = QtGui.QAction('Redo', self)
         redoAction.triggered.connect(self.project.redo)
         redoAction.setShortcut('Ctrl+Y')
-        
+
         cutAction = QtGui.QAction('Cut', self)
         cutAction.triggered.connect(self.timelineWidget.cut)
         cutAction.setShortcut('Ctrl+X')
@@ -465,7 +474,7 @@ class MainWindow(QtGui.QMainWindow):
         pasteAction = QtGui.QAction('Paste', self)
         pasteAction.triggered.connect(self.timelineWidget.paste)
         pasteAction.setShortcut('Ctrl+V')
-        
+
         editMenu = menubar.addMenu('Edit')
         editMenu.addAction(undoAction)
         editMenu.addAction(redoAction)
@@ -473,7 +482,7 @@ class MainWindow(QtGui.QMainWindow):
         editMenu.addAction(cutAction)
         editMenu.addAction(copyAction)
         editMenu.addAction(pasteAction)
-        
+
         ### tools menu ###
         toolsMenu = menubar.addMenu('Tools')
         toolsMenu.addAction(penToolAction)
@@ -481,7 +490,7 @@ class MainWindow(QtGui.QMainWindow):
         toolsMenu.addAction(fillToolAction)
         toolsMenu.addAction(moveToolAction)
         toolsMenu.addAction(selectToolAction)
-        
+
         ### view menu ###
         viewMenu = menubar.addMenu('View')
         toolbars = self.findChildren(QtGui.QToolBar)
@@ -496,7 +505,7 @@ class MainWindow(QtGui.QMainWindow):
         lockLayoutAction.setCheckable(True)
         lockLayoutAction.triggered.connect(lambda: self.lockLayoutAction(lockLayoutAction))
         viewMenu.addAction(lockLayoutAction)
-        
+
         ### project menu ###
         newAction = QtGui.QAction('New', self)
         newAction.triggered.connect(self.newAction)
@@ -508,7 +517,7 @@ class MainWindow(QtGui.QMainWindow):
         replacePaletteAction.triggered.connect(self.replacePaletteAction)
         prefAction = QtGui.QAction('Background', self)
         prefAction.triggered.connect(self.backgroundAction)
-        
+
         projectMenu = menubar.addMenu('Project')
         projectMenu.addAction(newAction)
         projectMenu.addAction(cropAction)
@@ -523,25 +532,25 @@ class MainWindow(QtGui.QMainWindow):
         savePenAction.triggered.connect(self.savePenAction)
         reloadResourcesAction = QtGui.QAction('reload resources', self)
         reloadResourcesAction.triggered.connect(self.reloadResourcesAction)
-        
+
         resourcesMenu = menubar.addMenu('Resources')
         resourcesMenu.addAction(savePaletteAction)
         resourcesMenu.addAction(savePenAction)
         resourcesMenu.addAction(reloadResourcesAction)
-        
+
         ### shortcuts ###
         shortcut = QtGui.QShortcut(self)
         shortcut.setKey(QtCore.Qt.Key_Left)
-        shortcut.activated.connect(lambda : self.selectFrame(-1))
+        shortcut.activated.connect(lambda: self.selectFrame(-1))
         shortcut2 = QtGui.QShortcut(self)
         shortcut2.setKey(QtCore.Qt.Key_Right)
-        shortcut2.activated.connect(lambda : self.selectFrame(1))
+        shortcut2.activated.connect(lambda: self.selectFrame(1))
         shortcut3 = QtGui.QShortcut(self)
         shortcut3.setKey(QtCore.Qt.Key_Up)
-        shortcut3.activated.connect(lambda : self.selectLayer(-1))
+        shortcut3.activated.connect(lambda: self.selectLayer(-1))
         shortcut4 = QtGui.QShortcut(self)
         shortcut4.setKey(QtCore.Qt.Key_Down)
-        shortcut4.activated.connect(lambda : self.selectLayer(1))
+        shortcut4.activated.connect(lambda: self.selectLayer(1))
         shortcut5 = QtGui.QShortcut(self)
         shortcut5.setKey(QtCore.Qt.Key_Space)
         shortcut5.activated.connect(self.timelineWidget.playPauseClicked)
@@ -550,14 +559,14 @@ class MainWindow(QtGui.QMainWindow):
         self.readSettings()
 
         self.show()
-        
+
     def writeSettings(self):
         settings = QtCore.QSettings()
         settings.beginGroup("mainWindow")
         settings.setValue("geometry", self.saveGeometry())
         settings.setValue("windowState", self.saveState())
         settings.endGroup()
-        
+
     def readSettings(self):
         settings = QtCore.QSettings()
         settings.beginGroup("mainWindow")
@@ -570,7 +579,7 @@ class MainWindow(QtGui.QMainWindow):
         except TypeError:
             pass # no state to restore so leave as is
         settings.endGroup()
-        
+
     ######## Toolbar #####################################################
     def penToolAction(self):
         self.project.tool = "pen"
@@ -625,7 +634,7 @@ class MainWindow(QtGui.QMainWindow):
                 self.project.dirUrl = os.path.dirname(url)
                 self.project.saved = True
                 self.updateTitle()
-        
+
     def saveAction(self):
         if self.project.url:
             url = save_pix(self.project.exportXml(), self.project.url)
@@ -638,7 +647,7 @@ class MainWindow(QtGui.QMainWindow):
             self.saveAsAction()
 
     def importAsNewAction(self):
-        size, frames, colorTable = import_img(self.project, 
+        size, frames, colorTable = import_img(self.project,
                                               self.project.dirUrl)
         if size and frames and colorTable:
             self.project.saveToUndo("all")
@@ -646,9 +655,9 @@ class MainWindow(QtGui.QMainWindow):
             self.project.updateViewSign.emit()
             self.project.updatePaletteSign.emit()
             self.project.updateTimelineSign.emit()
-            
+
     def importAsLayerAction(self):
-        size, frames, colorTable = import_img(self.project, 
+        size, frames, colorTable = import_img(self.project,
                                               self.project.dirUrl,
                                               self.project.size,
                                               self.project.colorTable)
@@ -658,14 +667,14 @@ class MainWindow(QtGui.QMainWindow):
             self.project.updateViewSign.emit()
             self.project.updatePaletteSign.emit()
             self.project.updateTimelineSign.emit()
-    
+
     def exportAction(self):
         export_png(self.project, self.project.dirUrl)
-    
+
     def closeEvent(self, event):
         self.writeSettings()
         self.exitAction()
-        
+
     def exitAction(self):
         message = QtGui.QMessageBox()
         message.setWindowTitle("Quit?")
@@ -676,7 +685,7 @@ class MainWindow(QtGui.QMainWindow):
         ret = message.exec_();
         if ret:
             QtGui.qApp.quit()
-        
+
     ######## View menu ##############################################
     def lockLayoutAction(self, action):
         widgets = self.findChildren(QtGui.QDockWidget) + self.findChildren(QtGui.QToolBar)
@@ -705,7 +714,7 @@ class MainWindow(QtGui.QMainWindow):
                     widget.setFloatable(True)
                     widget.setMovable(True)
                     widget.setAllowedAreas(QtCore.Qt.AllToolBarAreas)
-    
+
     ######## Project menu ##############################################
     def newAction(self):
         size, palette = NewDialog().getReturn()
@@ -724,7 +733,7 @@ class MainWindow(QtGui.QMainWindow):
         if rect:
             self.project.saveToUndo("size")
             self.project.timeline.applyToAllCanvas(
-                    lambda c: Canvas(self.project, c.copy(rect)))
+                lambda c: Canvas(self.project, c.copy(rect)))
             self.project.size = rect.size()
             self.project.updateViewSign.emit()
 
@@ -732,15 +741,16 @@ class MainWindow(QtGui.QMainWindow):
         factor = ResizeDialog(self.project.size).getReturn()
         if factor and factor != 1:
             self.project.saveToUndo("size")
-            newSize = self.project.size*factor
+            newSize = self.project.size * factor
             self.project.timeline.applyToAllCanvas(
-                    lambda c: Canvas(self.project, c.scaled(newSize)))
+                lambda c: Canvas(self.project, c.scaled(newSize)))
             self.project.size = newSize
             self.project.updateViewSign.emit()
-            
+
     def replacePaletteAction(self):
-        url = QtGui.QFileDialog.getOpenFileName(None, "open palette file", 
-                os.path.join("resources", "palette"), "Palette files (*.pal, *.gpl );;All files (*)")
+        url = QtGui.QFileDialog.getOpenFileName(None, "open palette file",
+                                                os.path.join("resources", "palette"),
+                                                "Palette files (*.pal, *.gpl );;All files (*)")
         if url:
             pal = import_palette(url, len(self.project.colorTable))
             if pal:
@@ -750,10 +760,10 @@ class MainWindow(QtGui.QMainWindow):
                     i.setColorTable(self.project.colorTable)
                 self.project.updateViewSign.emit()
                 self.project.updatePaletteSign.emit()
-        
+
     def backgroundAction(self):
         color, pattern = BackgroundDialog(self.project.bgColor,
-                                self.project.bgPattern).getReturn()
+                                          self.project.bgPattern).getReturn()
         if color and pattern:
             self.project.saveToUndo("background")
             self.project.bgColor = color
@@ -771,7 +781,7 @@ class MainWindow(QtGui.QMainWindow):
                 print("saved")
             except IOError:
                 print("Can't open file")
-        
+
     def savePenAction(self):
         if self.project.penDict["custom"]:
             url = get_save_url(os.path.join("resources", "pen"), "py")
@@ -784,35 +794,35 @@ class MainWindow(QtGui.QMainWindow):
                     print("saved")
                 except IOError:
                     print("Can't open file")
-        
-        
+
+
     def reloadResourcesAction(self):
         self.project.importResources()
         self.toolsWidget.penWidget.loadPen()
         self.toolsWidget.brushWidget.loadBrush()
-        
+
     ######## Shortcuts #################################################
     def selectFrame(self, n):
         maxF = max([len(l) for l in self.project.timeline])
-        if 0 <= self.project.curFrame+n < maxF:
+        if 0 <= self.project.curFrame + n < maxF:
             self.project.curFrame += n
             self.project.updateTimelineSign.emit()
             self.project.updateViewSign.emit()
 
     def selectLayer(self, n):
-        if 0 <= self.project.curLayer+n < len(self.project.timeline):
+        if 0 <= self.project.curLayer + n < len(self.project.timeline):
             self.project.curLayer += n
             self.project.updateTimelineSign.emit()
             self.project.updateViewSign.emit()
-            
+
     def updateTitle(self):
         url, sav = "untitled", "* "
         if self.project.saved:
             sav = ""
         if self.project.url:
             url = os.path.basename(self.project.url)
-        self.setWindowTitle("%s%s - pixeditor" %(sav, url))
-        
+        self.setWindowTitle("%s%s - pixeditor" % (sav, url))
+
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)

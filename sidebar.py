@@ -4,6 +4,8 @@
 from PyQt4 import QtCore
 from PyQt4 import QtGui
 
+import math
+
 from widget import Button, Viewer
 from colorPicker import ColorDialog
 
@@ -17,24 +19,45 @@ class PaletteCanvas(QtGui.QWidget):
         self.black = QtGui.QColor(0, 0, 0)
         self.white = QtGui.QColor(255, 255, 255)
         self.parent.project.updateBackgroundSign.connect(self.updateBackground)
-        self.rowLength = 8
+        self.swatches = 256
+        self.columns = 16
+        self.rows = (self.swatches + self.swatches % self.columns) // self.columns
         self.swatchWidth = self.swatchHeight = 16
-        self.swatchHorizontalPadding = self.swatchVerticalPadding = 2
+        self.swatchHorizontalPadding = self.swatchVerticalPadding = 0
         self.swatchOffsetX = self.swatchWidth + 2 * self.swatchHorizontalPadding
         self.swatchOffsetY = self.swatchHeight + 2 * self.swatchVerticalPadding
-        self.setFixedSize(self.rowLength * self.swatchOffsetX + self.swatchHorizontalPadding,
-                          self.rowLength * self.swatchOffsetY + self.swatchVerticalPadding)
+        self.setFixedSize(self.columns * self.swatchOffsetX + self.swatchHorizontalPadding,
+                          (self.swatches + self.swatches % self.columns) // self.columns * self.swatchOffsetY + self.swatchVerticalPadding)
+        self.setAcceptDrops(True)
         
     def updateBackground(self):
          self.background = QtGui.QBrush(self.parent.project.bgColor)
          self.update()
 
-    def swatchIndexToGridCoord(self, index):
-        return (index % self.rowLength, index // self.rowLength)
+    def swatchIndexToGrid(self, index):
+        return (index % self.columns, index // self.columns)
     
-    def swatchGridCoordToIndex(self, x, y):
-        return y * self.rowLength + x
+    def swatchGridToIndex(self, x, y):
+        if x < 0 or x >= self.columns:
+            return None
+        index = y * self.columns + x
+        if index < 0 or index > self.swatches:
+            return None
+        return index
     
+    #def swatchPointToGrid(self, x, y):
+    #    return ((x - self.swatchHorizontalPadding // 2) // self.swatchOffsetX,
+    #            (y - self.swatchVerticalPadding // 2) // self.swatchOffsetY)
+    #
+    #def swatchPointToIndex(self, x, y):
+    #    gridX, gridY = swatchPointToGrid(x, y)
+    #    if gridX < 0 or gridX >= self.columns or gridY < 0 or gridY >= self.rows:
+    #        return None
+
+    def swatchPointToGrid(self, x, y):
+        return ((x - self.swatchHorizontalPadding / 2) / self.swatchOffsetX,
+                (y - self.swatchVerticalPadding / 2) / self.swatchOffsetY)
+        
     def swatchRect(self, x, y):
         return QtCore.QRect(x * self.swatchOffsetX + self.swatchHorizontalPadding,
                             y * self.swatchOffsetY + self.swatchVerticalPadding,
@@ -44,7 +67,7 @@ class PaletteCanvas(QtGui.QWidget):
         p = QtGui.QPainter(self)
         p.fillRect (0, 0, self.width(), self.height(), self.background)
         for n, i in enumerate(self.parent.project.colorTable):
-            rect = self.swatchRect(*(self.swatchIndexToGridCoord(n)))
+            rect = self.swatchRect(*(self.swatchIndexToGrid(n)))
             color = QtGui.QColor().fromRgba(i)
             if n == 0:
                 p.fillRect(rect.adjusted(0, 0, -rect.width() // 2, -rect.height() // 2), QtGui.QBrush(color))
@@ -52,65 +75,68 @@ class PaletteCanvas(QtGui.QWidget):
             else:
                 p.fillRect(rect, QtGui.QBrush(color))
 
-        rect = self.swatchRect(*(self.swatchIndexToGridCoord(self.parent.project.color)))
+        rect = self.swatchRect(*(self.swatchIndexToGrid(self.parent.project.color)))
         p.setPen(self.black)
-        p.drawRect (rect.adjusted(-2, -2, 1, 1))
-        p.setPen(self.white)
         p.drawRect (rect.adjusted(-1, -1, 0, 0))
+        p.setPen(self.white)
+        p.drawRect (rect.adjusted(0, 0, -1, -1))
 
-    def event(self, event):
-        if (event.type() == QtCore.QEvent.MouseButtonPress and
-                       event.button()==QtCore.Qt.LeftButton):
+    def mousePressEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            self.dragStartPosition = event.pos()
+            
             item = self.getItem(event.x(), event.y())
             if item is not None:
                 self.parent.project.setColor(item)
-        elif (event.type() == QtCore.QEvent.MouseButtonDblClick and
-                       event.button()==QtCore.Qt.LeftButton):
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() & QtCore.Qt.LeftButton:
+            if (event.pos() - self.dragStartPosition).manhattanLength() >= QtGui.QApplication.startDragDistance():
+                ### initiate drag and drop ###
+                gridX, gridY = self.swatchPointToGrid(self.dragStartPosition.x(), self.dragStartPosition.y())
+                index = self.swatchGridToIndex(math.floor(gridX), math.floor(gridY))
+                if index is not None and index < len(self.parent.project.colorTable):
+                    drag = QtGui.QDrag(self)
+                    mimeData = QtCore.QMimeData()
+                    mimeData.setColorData(QtGui.QColor.fromRgba(self.parent.project.colorTable[index]))
+                    drag.setMimeData(mimeData)
+                    dropAction = drag.exec()
+        
+    def mouseReleaseEvent(self, event):
+        pass
+        
+    def mouseDoubleClickEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
             item = self.getItem(event.x(), event.y())
             if item is not None:
                 self.parent.editColor(item)
-        return QtGui.QWidget.event(self, event)
         
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasFormat("application/x-color"):
+            event.acceptProposedAction()
+             
+    def dragLeaveEvent(self, event):
+        self
+        
+    def dragMoveEvent(self, event):
+        self
+        
+    def dropEvent(self, event):
+        event.mimeData().formats()
+        gridX, gridY = self.swatchPointToGrid(event.pos().x(), event.pos().y())
+        index = self.swatchGridToIndex(math.floor(gridX), math.floor(gridY))
+        if index is not None and index < len(self.parent.project.colorTable):
+            self.parent.project.colorTable[index] = event.mimeData().colorData().rgba()
+            self.parent.project.updatePaletteSign.emit()
+        event.acceptProposedAction()
+    
     def getItem(self, x, y):
         x, y = (x - self.swatchHorizontalPadding) // self.swatchOffsetX, (y - self.swatchVerticalPadding) // self.swatchOffsetY
-        s = self.swatchGridCoordToIndex(x, y)
+        s = self.swatchGridToIndex(x, y)
         if s >= 0 and s < len(self.parent.project.colorTable):
             return s
         return None
 
-class AlphaCanvas(QtGui.QWidget):
-    """ Canvas where the palette is drawn """
-    def __init__(self, parent):
-        QtGui.QWidget.__init__(self)
-        self.parent = parent
-        self.setFixedSize(26, 26)
-        self.background = QtGui.QBrush(self.parent.project.bgColor)
-        self.alpha = QtGui.QPixmap("icons/color_alpha.png")
-        self.parent.project.updateBackgroundSign.connect(self.updateBackground)
-        
-    def updateBackground(self):
-         self.background = QtGui.QBrush(self.parent.project.bgColor)
-         self.update()
-
-    def event(self, event):
-        if (event.type() == QtCore.QEvent.MouseButtonPress and
-                       event.button()==QtCore.Qt.LeftButton):
-            self.parent.project.setColor(0)
-        elif event.type() == QtCore.QEvent.Paint:
-            p = QtGui.QPainter(self)
-            p.fillRect (0, 0, self.width(), self.height(), 
-                    QtGui.QBrush(QtGui.QColor(70, 70, 70)))
-            p.fillRect (1, 1, self.width()-2, self.height()-2, self.background)
-            if self.parent.project.color == 0:
-                p.fillRect (3, 3, 20, 20, QtGui.QBrush(QtGui.QColor(0, 0, 0)))
-                p.fillRect (4, 4, 18, 18, QtGui.QBrush(QtGui.QColor(255, 255, 255)))
-            p.drawPixmap(5, 5, self.alpha)
-            # just to be sure alpha is the first color
-            p.fillRect(5, 5, 16, 16, QtGui.QBrush(
-                QtGui.QColor().fromRgba(self.parent.project.colorTable[0])))
-        return QtGui.QWidget.event(self, event)
-
-    
 class PenWidget(QtGui.QWidget):
     def __init__(self, parent, project):
         QtGui.QWidget.__init__(self)
@@ -282,8 +308,6 @@ class PaletteWidget(QtGui.QWidget):
         QtGui.QWidget.__init__(self)
         self.project = project
 
-        self.alphaCanvas = AlphaCanvas(self)
-
         ### palette ###
         self.paletteCanvas = PaletteCanvas(self)
         self.paletteV = Viewer()
@@ -292,7 +316,6 @@ class PaletteWidget(QtGui.QWidget):
         self.paletteV.setWidget(self.paletteCanvas)
         
         self.project.updatePaletteSign.connect(self.paletteCanvas.update)
-        self.project.updatePaletteSign.connect(self.alphaCanvas.update)
         addColorB = Button("add color",
             "icons/color_add.png", self.addColor)
         delColorB = Button("delete color",
@@ -311,7 +334,6 @@ class PaletteWidget(QtGui.QWidget):
         colorButtons.addWidget(moveRightColorB)
         paintOption = QtGui.QHBoxLayout()
         paintOption.setSpacing(0)
-        paintOption.addWidget(self.alphaCanvas)
         paintOption.addStretch()
         self.layout = QtGui.QGridLayout()
         self.layout.setSpacing(0)
