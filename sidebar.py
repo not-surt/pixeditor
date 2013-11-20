@@ -128,14 +128,17 @@ class PaletteCanvas(QtGui.QWidget):
         if index is not None and index < len(self.parent.project.colorTable):
             if event.keyboardModifiers() & QtCore.Qt.ShiftModifier:
                 self.parent.project.colorTable[index] = event.mimeData().colorData().rgba()
-                self.parent.project.updatePaletteSign.emit()
+                #self.parent.project.updatePaletteSign.emit()
+                self.parent.updateColorTable()
             elif event.keyboardModifiers() & QtCore.Qt.ControlModifier:
                 pass
             else:
                 temp = self.parent.project.colorTable[index]
                 self.parent.project.colorTable[index] = event.mimeData().colorData().rgba()
                 self.parent.project.colorTable[self.dragIndex] = temp
-                self.parent.project.updatePaletteSign.emit()
+                #self.parent.project.updatePaletteSign.emit()
+                self.parent.updateColorTable()
+
         event.acceptProposedAction()
     
     def getItem(self, x, y):
@@ -356,6 +359,12 @@ class PaletteWidget(QtGui.QWidget):
                     self.paletteV.verticalScrollBar().width() + 2)
 
     ######## Color #####################################################
+    def updateColorTable(self):
+        for i in self.project.timeline.getAllCanvas():
+            i.setColorTable(self.project.colorTable)
+        self.project.updateViewSign.emit()
+        self.paletteCanvas.update()
+        self.project.colorChangedSign.emit()
     def editColor(self, n):
         col = self.project.colorTable[self.project.color]
         ok, color = ColorDialog(False, col).getRgba()
@@ -363,11 +372,7 @@ class PaletteWidget(QtGui.QWidget):
             return
         self.project.saveToUndo("colorTable")
         self.project.colorTable[n] = color
-        for i in self.project.timeline.getAllCanvas():
-            i.setColorTable(self.project.colorTable)
-        self.project.updateViewSign.emit()
-        self.paletteCanvas.update()
-        self.project.colorChangedSign.emit()
+        self.updateColorTable()
 
     def addColor(self):
         """ select a color and add it to the palette"""
