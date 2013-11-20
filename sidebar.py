@@ -91,6 +91,10 @@ class PaletteCanvas(QtGui.QWidget):
                     mimeData = QtCore.QMimeData()
                     mimeData.setColorData(QtGui.QColor.fromRgba(self.parent.project.colorTable[self.dragIndex]))
                     drag.setMimeData(mimeData)
+                    image = QtGui.QImage(self.swatchWidth, self.swatchHeight, QtGui.QImage.Format_ARGB32)
+                    image.fill(mimeData.colorData())
+                    drag.setPixmap(QtGui.QPixmap.fromImage(image))
+                    drag.setHotSpot(QtCore.QPoint(image.width() // 2, image.height() // 2))
                     dropAction = drag.exec()
         
     def mouseReleaseEvent(self, event):
