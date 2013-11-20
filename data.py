@@ -626,22 +626,20 @@ class Canvas(QtGui.QImage):
         
     def clic(self, point, button):
         color = self.project.color
-        if button == QtCore.Qt.RightButton:
-            color = 0
-        if  (button == QtCore.Qt.LeftButton and (self.project.tool == "pipette" or
-             (self.project.tool == "pen" or self.project.tool == "fill") and
-             QtGui.QApplication.keyboardModifiers() == QtCore.Qt.ControlModifier) and 
-             self.rect().contains(point)):
+        tool = self.project.tool
+        if (((button == QtCore.Qt.LeftButton and tool == "pipette") or
+                (button == QtCore.Qt.RightButton and (tool == "pen" or tool == "fill"))) and
+                self.rect().contains(point)):
             self.project.setColor(self.pixelIndex(point))
             self.lastPoint = False
-        elif self.project.tool == "pen":
+        elif tool == "pen":
             self.project.saveToUndo("canvas")
             if QtGui.QApplication.keyboardModifiers() == QtCore.Qt.ShiftModifier and self.lastPoint:
                 self.drawLine(point, color)
             else:
                 self.drawPoint(point, color)
             self.lastPoint = point
-        elif (self.rect().contains(point) and self.project.tool == "fill" and 
+        elif (self.rect().contains(point) and tool == "fill" and
               color != self.pixelIndex(point)):
             self.project.saveToUndo("canvas")
             if self.project.fillMode == "adjacent":
@@ -652,15 +650,13 @@ class Canvas(QtGui.QImage):
 
     def move(self, point, button):
         color = self.project.color
-        if button == QtCore.Qt.RightButton:
-            color = 0
-        if  (button == QtCore.Qt.LeftButton and (self.project.tool == "pipette" or
-             (self.project.tool == "pen" or self.project.tool == "fill") and
-             QtGui.QApplication.keyboardModifiers() == QtCore.Qt.ControlModifier) and 
-             self.rect().contains(point)):
+        tool = self.project.tool
+        if (((button == QtCore.Qt.LeftButton and tool == "pipette") or
+                (button == QtCore.Qt.RightButton and (tool == "pen" or tool == "fill"))) and
+                self.rect().contains(point)):
             self.project.setColor(self.pixelIndex(point))
             self.lastPoint = False
-        elif self.project.tool == "pen":
+        elif tool == "pen":
             if self.lastPoint:
                 self.drawLine(point, color)
                 self.lastPoint = point
