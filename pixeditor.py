@@ -225,7 +225,7 @@ class Scene(QtGui.QGraphicsView):
 
     def scaleView(self, factor):
         n = self.zoomN * factor
-        if n < 1 or n > 32:
+        if n < 1 or n > 128:
             return
         self.zoomN = n
         self.penItem.hide()
