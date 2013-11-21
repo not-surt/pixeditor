@@ -22,8 +22,9 @@ class PaletteCanvas(QtGui.QWidget):
         self.swatches = 256
         self.columns = 8
         self.rows = (self.swatches + self.swatches % self.columns) // self.columns
-        self.swatchWidth = self.swatchHeight = 24
-        self.swatchHorizontalPadding = self.swatchVerticalPadding = 2
+        self.swatchWidth = 24
+        self.swatchHeight = 24
+        self.swatchHorizontalPadding = self.swatchVerticalPadding = 1
         self.swatchOffsetX = self.swatchWidth + 2 * self.swatchHorizontalPadding
         self.swatchOffsetY = self.swatchHeight + 2 * self.swatchVerticalPadding
         self.setFixedSize(self.columns * self.swatchOffsetX + self.swatchHorizontalPadding,
@@ -75,10 +76,7 @@ class PaletteCanvas(QtGui.QWidget):
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             self.dragStartPosition = event.pos()
-            
-            item = self.getItem(event.x(), event.y())
-            if item is not None:
-                self.parent.project.setColor(item)
+            event.accept()
 
     def mouseMoveEvent(self, event):
         if event.buttons() & QtCore.Qt.LeftButton:
@@ -95,16 +93,20 @@ class PaletteCanvas(QtGui.QWidget):
                     image.fill(mimeData.colorData())
                     drag.setPixmap(QtGui.QPixmap.fromImage(image))
                     drag.setHotSpot(QtCore.QPoint(image.width() // 2, image.height() // 2))
-                    dropAction = drag.exec()
+                    dropAction = drag.exec(QtCore.Qt.CopyAction | QtCore.Qt.MoveAction)
         
     def mouseReleaseEvent(self, event):
-        pass
-        
+        item = self.getItem(event.x(), event.y())
+        if item is not None:
+            self.parent.project.setColor(item)
+            event.accept()
+
     def mouseDoubleClickEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             item = self.getItem(event.x(), event.y())
             if item is not None:
                 self.parent.editColor(item)
+            event.accept()
         
     def dragEnterEvent(self, event):
         if event.mimeData().hasFormat("application/x-color"):
@@ -121,8 +123,11 @@ class PaletteCanvas(QtGui.QWidget):
         gridX, gridY = self.swatchPointToGrid(event.pos().x(), event.pos().y())
         dropIndex = self.swatchGridToIndex(math.floor(gridX), math.floor(gridY))
         if dropIndex is not None and dropIndex < len(self.parent.project.colorTable):
+            if event.keyboardModifiers() & QtCore.Qt.ControlModifier: print("Control")
+            if event.keyboardModifiers() & QtCore.Qt.ShiftModifier: print("Shift")
+            if event.keyboardModifiers() & (QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier): print("Control+Shift")
             # Insert colour
-            if event.keyboardModifiers() & (QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier):
+            if event.keyboardModifiers() & QtCore.Qt.ControlModifier and event.keyboardModifiers() & QtCore.Qt.ShiftModifier:
                 pos = dropIndex + (0 if gridX - math.floor(gridX) < 0.5 else 1)
                 colorTable = self.parent.project.colorTable
                 self.parent.project.colorTable = colorTable[:pos] + colorTable[self.dragIndex:self.dragIndex + 1] + colorTable[pos:]
