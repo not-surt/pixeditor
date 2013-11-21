@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 #-*- coding: utf-8 -*-
 
-from PyQt4 import QtCore
-from PyQt4 import QtGui
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 
 import math
 
@@ -10,14 +10,26 @@ from widget import Button, Viewer
 from colorPicker import ColorDialog
 
 
-class PaletteCanvas(QtGui.QWidget):
+class ColorSlider(QSlider):
+    def __init__(self, parent, component):
+        QSlider.__init__(self)
+        self.parent = parent
+        self.component = component
+
+
+class ColourWidget(QWidget):
+    def __init__(self, parent):
+        QWidget.__init__(self)
+
+
+class PaletteCanvas(QWidget):
     """ Canvas where the palette is draw """
     def __init__(self, parent):
-        QtGui.QWidget.__init__(self)
+        QWidget.__init__(self)
         self.parent = parent
-        self.background = QtGui.QBrush(self.parent.project.bgColor)
-        self.black = QtGui.QColor(0, 0, 0)
-        self.white = QtGui.QColor(255, 255, 255)
+        self.background = QBrush(self.parent.project.bgColor)
+        self.black = QColor(0, 0, 0)
+        self.white = QColor(255, 255, 255)
         self.parent.project.updateBackgroundSign.connect(self.updateBackground)
         self.swatches = 256
         self.columns = 8
@@ -32,7 +44,7 @@ class PaletteCanvas(QtGui.QWidget):
         self.setAcceptDrops(True)
         
     def updateBackground(self):
-         self.background = QtGui.QBrush(self.parent.project.bgColor)
+         self.background = QBrush(self.parent.project.bgColor)
          self.update()
 
     def swatchIndexToGrid(self, index):
@@ -51,21 +63,21 @@ class PaletteCanvas(QtGui.QWidget):
                 (y - self.swatchVerticalPadding / 2) / self.swatchOffsetY)
         
     def swatchRect(self, x, y):
-        return QtCore.QRect(x * self.swatchOffsetX + self.swatchHorizontalPadding,
+        return QRect(x * self.swatchOffsetX + self.swatchHorizontalPadding,
                             y * self.swatchOffsetY + self.swatchVerticalPadding,
                             self.swatchWidth, self.swatchHeight)
     
     def paintEvent(self, ev=''):
-        p = QtGui.QPainter(self)
+        p = QPainter(self)
         p.fillRect (0, 0, self.width(), self.height(), self.background)
         for n, i in enumerate(self.parent.project.colorTable):
             rect = self.swatchRect(*(self.swatchIndexToGrid(n)))
-            color = QtGui.QColor().fromRgba(i)
+            color = QColor().fromRgba(i)
             if n == 0:
-                p.fillRect(rect.adjusted(0, 0, -rect.width() // 2, -rect.height() // 2), QtGui.QBrush(color))
-                p.fillRect(rect.adjusted(rect.width() // 2, rect.height() // 2, 0, 0), QtGui.QBrush(color))
+                p.fillRect(rect.adjusted(0, 0, -rect.width() // 2, -rect.height() // 2), QBrush(color))
+                p.fillRect(rect.adjusted(rect.width() // 2, rect.height() // 2, 0, 0), QBrush(color))
             else:
-                p.fillRect(rect, QtGui.QBrush(color))
+                p.fillRect(rect, QBrush(color))
 
         rect = self.swatchRect(*(self.swatchIndexToGrid(self.parent.project.color)))
         p.setPen(self.black)
@@ -74,26 +86,26 @@ class PaletteCanvas(QtGui.QWidget):
         p.drawRect (rect.adjusted(0, 0, -1, -1))
 
     def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton:
+        if event.button() == Qt.LeftButton:
             self.dragStartPosition = event.pos()
             event.accept()
 
     def mouseMoveEvent(self, event):
-        if event.buttons() & QtCore.Qt.LeftButton:
-            if (event.pos() - self.dragStartPosition).manhattanLength() >= QtGui.QApplication.startDragDistance():
+        if event.buttons() & Qt.LeftButton:
+            if (event.pos() - self.dragStartPosition).manhattanLength() >= QApplication.startDragDistance():
                 ### initiate drag and drop ###
                 gridX, gridY = self.swatchPointToGrid(self.dragStartPosition.x(), self.dragStartPosition.y())
                 self.dragIndex = self.swatchGridToIndex(math.floor(gridX), math.floor(gridY))
                 if self.dragIndex is not None and self.dragIndex < len(self.parent.project.colorTable):
-                    drag = QtGui.QDrag(self)
-                    mimeData = QtCore.QMimeData()
-                    mimeData.setColorData(QtGui.QColor.fromRgba(self.parent.project.colorTable[self.dragIndex]))
+                    drag = QDrag(self)
+                    mimeData = QMimeData()
+                    mimeData.setColorData(QColor.fromRgba(self.parent.project.colorTable[self.dragIndex]))
                     drag.setMimeData(mimeData)
-                    image = QtGui.QImage(self.swatchWidth, self.swatchHeight, QtGui.QImage.Format_ARGB32)
+                    image = QImage(self.swatchWidth, self.swatchHeight, QImage.Format_ARGB32)
                     image.fill(mimeData.colorData())
-                    drag.setPixmap(QtGui.QPixmap.fromImage(image))
-                    drag.setHotSpot(QtCore.QPoint(image.width() // 2, image.height() // 2))
-                    dropAction = drag.exec(QtCore.Qt.CopyAction | QtCore.Qt.MoveAction)
+                    drag.setPixmap(QPixmap.fromImage(image))
+                    drag.setHotSpot(QPoint(image.width() // 2, image.height() // 2))
+                    dropAction = drag.exec(Qt.CopyAction | Qt.MoveAction)
         
     def mouseReleaseEvent(self, event):
         item = self.getItem(event.x(), event.y())
@@ -102,7 +114,7 @@ class PaletteCanvas(QtGui.QWidget):
             event.accept()
 
     def mouseDoubleClickEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton:
+        if event.button() == Qt.LeftButton:
             item = self.getItem(event.x(), event.y())
             if item is not None:
                 self.parent.editColor(item)
@@ -123,22 +135,22 @@ class PaletteCanvas(QtGui.QWidget):
         gridX, gridY = self.swatchPointToGrid(event.pos().x(), event.pos().y())
         dropIndex = self.swatchGridToIndex(math.floor(gridX), math.floor(gridY))
         if dropIndex is not None and dropIndex < len(self.parent.project.colorTable):
-            if event.keyboardModifiers() & QtCore.Qt.ControlModifier: print("Control")
-            if event.keyboardModifiers() & QtCore.Qt.ShiftModifier: print("Shift")
-            if event.keyboardModifiers() & (QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier): print("Control+Shift")
+            if event.keyboardModifiers() & Qt.ControlModifier: print("Control")
+            if event.keyboardModifiers() & Qt.ShiftModifier: print("Shift")
+            if event.keyboardModifiers() & (Qt.ControlModifier | Qt.ShiftModifier): print("Control+Shift")
             # Insert colour
-            if event.keyboardModifiers() & QtCore.Qt.ControlModifier and event.keyboardModifiers() & QtCore.Qt.ShiftModifier:
+            if event.keyboardModifiers() & Qt.ControlModifier and event.keyboardModifiers() & Qt.ShiftModifier:
                 pos = dropIndex + (0 if gridX - math.floor(gridX) < 0.5 else 1)
                 colorTable = self.parent.project.colorTable
                 self.parent.project.colorTable = colorTable[:pos] + colorTable[self.dragIndex:self.dragIndex + 1] + colorTable[pos:]
                 self.parent.updateColorTable()
             # Replace colour
-            elif event.keyboardModifiers() & QtCore.Qt.ShiftModifier:
+            elif event.keyboardModifiers() & Qt.ShiftModifier:
                 self.parent.project.colorTable[dropIndex] = event.mimeData().colorData().rgba()
                 #self.parent.project.updatePaletteSign.emit()
                 self.parent.updateColorTable()
             # Move colour
-            elif event.keyboardModifiers() & QtCore.Qt.ControlModifier:
+            elif event.keyboardModifiers() & Qt.ControlModifier:
                 pos = dropIndex + (0 if gridX - math.floor(gridX) < 0.5 else 1)
                 colorTable = self.parent.project.colorTable
                 if pos < self.dragIndex:
@@ -163,15 +175,15 @@ class PaletteCanvas(QtGui.QWidget):
             return s
         return None
 
-class PenWidget(QtGui.QWidget):
+class PenWidget(QWidget):
     def __init__(self, parent, project):
-        QtGui.QWidget.__init__(self)
+        QWidget.__init__(self)
         self.parent = parent
         self.project = project
         self.setToolTip("pen")
         self.setFixedSize(26, 26)
         self.project.updateBackgroundSign.connect(self.update)
-        self.penMenu = QtGui.QMenu(self)
+        self.penMenu = QMenu(self)
         self.currentAction = None
         self.loadPen()
         self.project.customPenSign.connect(self.setCustomPen)
@@ -179,7 +191,7 @@ class PenWidget(QtGui.QWidget):
     def loadPen(self):
         self.penMenu.clear()
         for name, icon in self.project.penList:
-            action = QtGui.QAction(QtGui.QIcon(icon), name, self)
+            action = QAction(QIcon(icon), name, self)
             action.pixmap = icon
             action.setIconVisibleInMenu(True)
             self.penMenu.addAction(action)
@@ -187,21 +199,21 @@ class PenWidget(QtGui.QWidget):
                 self.currentAction = action
 
     def event(self, event):
-        if event.type() == QtCore.QEvent.MouseButtonPress:
+        if event.type() == QEvent.MouseButtonPress:
             self.changePen()
-        elif event.type() == QtCore.QEvent.Paint:
-            p = QtGui.QPainter(self)
+        elif event.type() == QEvent.Paint:
+            p = QPainter(self)
             p.fillRect (0, 0, self.width(), self.height(), 
-                    QtGui.QBrush(QtGui.QColor(70, 70, 70)))
+                    QBrush(QColor(70, 70, 70)))
             p.fillRect (1, 1, self.width()-2, self.height()-2, 
-                    QtGui.QBrush(self.project.bgColor))
+                    QBrush(self.project.bgColor))
             if self.currentAction.pixmap:
                 p.drawPixmap(5, 5, self.currentAction.pixmap)
-        return QtGui.QWidget.event(self, event)
+        return QWidget.event(self, event)
         
     def changePen(self):
         self.penMenu.setActiveAction(self.currentAction)
-        action = self.penMenu.exec(self.mapToGlobal(QtCore.QPoint(26, 2)), self.currentAction)
+        action = self.penMenu.exec(self.mapToGlobal(QPoint(26, 2)), self.currentAction)
         if action:
             self.currentAction = action
             self.project.pen = self.project.penDict[action.text()]
@@ -228,22 +240,22 @@ class PenWidget(QtGui.QWidget):
             self.parent.penClicked()
 
 
-class BrushWidget(QtGui.QWidget):
+class BrushWidget(QWidget):
     def __init__(self, parent, project):
-        QtGui.QWidget.__init__(self)
+        QWidget.__init__(self)
         self.parent = parent
         self.project = project
         self.setToolTip("brush")
         self.setFixedSize(26, 26)
         self.project.updateBackgroundSign.connect(self.update)
-        self.brushMenu = QtGui.QMenu(self)
+        self.brushMenu = QMenu(self)
         self.currentAction = None
         self.loadBrush()
 
     def loadBrush(self):
         self.brushMenu.clear()
         for name, icon in self.project.brushList:
-            action = QtGui.QAction(QtGui.QIcon(icon), name, self)
+            action = QAction(QIcon(icon), name, self)
             action.pixmap = icon
             action.setIconVisibleInMenu(True)
             self.brushMenu.addAction(action)
@@ -251,42 +263,42 @@ class BrushWidget(QtGui.QWidget):
                 self.currentAction = action
 
     def event(self, event):
-        if event.type() == QtCore.QEvent.MouseButtonPress:
+        if event.type() == QEvent.MouseButtonPress:
             self.changeBrush()
-        elif event.type() == QtCore.QEvent.Paint:
-            p = QtGui.QPainter(self)
+        elif event.type() == QEvent.Paint:
+            p = QPainter(self)
             p.fillRect (0, 0, self.width(), self.height(), 
-                    QtGui.QBrush(QtGui.QColor(70, 70, 70)))
+                    QBrush(QColor(70, 70, 70)))
             p.fillRect (1, 1, self.width()-2, self.height()-2, 
-                    QtGui.QBrush(self.project.bgColor))
+                    QBrush(self.project.bgColor))
             if self.currentAction.pixmap:
                 p.drawPixmap(5, 5, self.currentAction.pixmap)
-        return QtGui.QWidget.event(self, event)
+        return QWidget.event(self, event)
         
     def changeBrush(self):
         self.brushMenu.setActiveAction(self.currentAction)
-        action = self.brushMenu.exec(self.mapToGlobal(QtCore.QPoint(26, 2)), self.currentAction)
+        action = self.brushMenu.exec(self.mapToGlobal(QPoint(26, 2)), self.currentAction)
         if action:
             self.currentAction = action
             self.project.brush = self.project.brushDict[action.text()]
             self.update()
 
             
-class OptionFill(QtGui.QWidget):
+class OptionFill(QWidget):
     """ contextual option for the fill tool """
     def __init__(self, parent, project):
-        QtGui.QVBoxLayout .__init__(self)
+        QVBoxLayout .__init__(self)
         self.project = project
         self.parent = parent
         
-        self.adjacentFillRadio = QtGui.QRadioButton("adjacent colors", self)
+        self.adjacentFillRadio = QRadioButton("adjacent colors", self)
         self.adjacentFillRadio.pressed.connect(self.adjacentPressed)
         self.adjacentFillRadio.setChecked(True)
-        self.similarFillRadio = QtGui.QRadioButton("similar colors", self)
+        self.similarFillRadio = QRadioButton("similar colors", self)
         self.similarFillRadio.pressed.connect(self.similarPressed)
         
         ### Layout ###
-        layout = QtGui.QVBoxLayout()
+        layout = QVBoxLayout()
         layout.setSpacing(0)
         layout.addWidget(self.adjacentFillRadio)
         layout.addWidget(self.similarFillRadio)
@@ -301,20 +313,20 @@ class OptionFill(QtGui.QWidget):
         self.project.fillMode = "similar"
         
         
-class OptionSelect(QtGui.QWidget):
+class OptionSelect(QWidget):
     """ contextual option for the select tool """
     def __init__(self, parent, project):
-        QtGui.QVBoxLayout .__init__(self)
+        QVBoxLayout .__init__(self)
         self.project = project
         
-        self.cutFillRadio = QtGui.QRadioButton("cut", self)
+        self.cutFillRadio = QRadioButton("cut", self)
         self.cutFillRadio.pressed.connect(self.cutPressed)
         self.cutFillRadio.setChecked(True)
-        self.copyFillRadio = QtGui.QRadioButton("copy", self)
+        self.copyFillRadio = QRadioButton("copy", self)
         self.copyFillRadio.pressed.connect(self.copyPressed)
         
         ### Layout ###
-        layout = QtGui.QVBoxLayout()
+        layout = QVBoxLayout()
         layout.setSpacing(0)
         layout.addWidget(self.cutFillRadio)
         layout.addWidget(self.copyFillRadio)
@@ -328,17 +340,17 @@ class OptionSelect(QtGui.QWidget):
     def copyPressed(self):
         self.project.selectMode = "copy"
         
-class PaletteWidget(QtGui.QWidget):
+class PaletteWidget(QWidget):
     """ side widget containing palette """
     def __init__(self, project):
-        QtGui.QWidget.__init__(self)
+        QWidget.__init__(self)
         self.project = project
 
         ### palette ###
         self.paletteCanvas = PaletteCanvas(self)
         self.paletteV = Viewer()
-        self.paletteV.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.paletteV.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.paletteV.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.paletteV.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.paletteV.setWidget(self.paletteCanvas)
         
         self.project.updatePaletteSign.connect(self.paletteCanvas.update)
@@ -346,22 +358,16 @@ class PaletteWidget(QtGui.QWidget):
             "icons/color_add.png", self.addColor)
         delColorB = Button("delete color",
             "icons/color_del.png", self.delColor)
-        moveLeftColorB = Button("move color left",
-            "icons/color_move_left.png", self.moveColorLeft)
-        moveRightColorB = Button("move color right",
-            "icons/color_move_right.png", self.moveColorRight)
 
         ### Layout ###
-        colorButtons = QtGui.QHBoxLayout()
+        colorButtons = QHBoxLayout()
         colorButtons.setSpacing(0)
         colorButtons.addWidget(addColorB)
         colorButtons.addWidget(delColorB)
-        colorButtons.addWidget(moveLeftColorB)
-        colorButtons.addWidget(moveRightColorB)
-        paintOption = QtGui.QHBoxLayout()
+        paintOption = QHBoxLayout()
         paintOption.setSpacing(0)
         paintOption.addStretch()
-        self.layout = QtGui.QGridLayout()
+        self.layout = QGridLayout()
         self.layout.setSpacing(0)
         self.layout.addLayout(paintOption, 1, 1)
         self.layout.addWidget(self.paletteV, 2, 1)
@@ -414,37 +420,17 @@ class PaletteWidget(QtGui.QWidget):
             self.project.setColor(col-1)
             self.project.updateViewSign.emit()
 
-    def moveColorLeft(self):
-        col, table = self.project.color, self.project.colorTable
-        if col != 0:
-            self.project.saveToUndo("colorTable_frames")
-            table[col], table[col-1] = table[col-1], table[col]
-            for i in self.project.timeline.getAllCanvas():
-                i.swapColor(col, col-1)
-                i.setColorTable(table)
-            self.project.setColor(col-1)
-
-    def moveColorRight(self):
-        col, table = self.project.color, self.project.colorTable
-        if col != len(table)-1:
-            self.project.saveToUndo("colorTable_frames")
-            table[col], table[col+1] = table[col+1], table[col]
-            for i in self.project.timeline.getAllCanvas():
-                i.swapColor(col, col+1)
-                i.setColorTable(table)
-            self.project.setColor(col+1)
-
-class ContextWidget(QtGui.QWidget):
+class ContextWidget(QWidget):
     """ side widget cantaining painting context """
     def __init__(self, project):
-        QtGui.QWidget.__init__(self)
+        QWidget.__init__(self)
         self.project = project
 
         self.penWidget = PenWidget(self, self.project)
         self.brushWidget = BrushWidget(self, self.project)
 
         ### Layout ###
-        self.layout = QtGui.QHBoxLayout()
+        self.layout = QHBoxLayout()
         self.layout.setSpacing(0)
         self.layout.addWidget(self.penWidget)
         self.layout.addWidget(self.brushWidget)
@@ -452,17 +438,17 @@ class ContextWidget(QtGui.QWidget):
         self.layout.setContentsMargins(6, 0, 6, 0)
         self.setLayout(self.layout)
                 
-class OptionsWidget(QtGui.QWidget):
+class OptionsWidget(QWidget):
     """ side widget cantaining options """
     def __init__(self, project):
-        QtGui.QWidget.__init__(self)
+        QWidget.__init__(self)
         self.project = project
         
         self.optionFill = OptionFill(self, self.project)
         self.optionSelect = OptionSelect(self, self.project)
 
         ### Layout ###
-        self.layout = QtGui.QVBoxLayout()
+        self.layout = QVBoxLayout()
         self.layout.setSpacing(0)
         self.layout.addWidget(self.optionFill)
         self.optionFill.hide()

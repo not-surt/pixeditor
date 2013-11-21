@@ -2,33 +2,33 @@
 #-*- coding: utf-8 -*-
 
 
-from PyQt4 import QtGui
-from PyQt4 import QtCore
+from PyQt4.QtGui import *
+from PyQt4.QtCore import *
 
 from dialogs import RenameLayerDialog
 from widget import Button, Viewer
 
 
-class LayersCanvas(QtGui.QWidget):
+class LayersCanvas(QWidget):
     """ Widget containing the canvas list """
     def __init__(self, parent):
-        QtGui.QWidget.__init__(self)
+        QWidget.__init__(self)
         self.parent = parent
         self.setFixedWidth(100)
         
-        self.white = QtGui.QBrush(QtGui.QColor(255, 255, 255))
-        self.black = QtGui.QBrush(QtGui.QColor(0, 0, 0))
-        self.grey = QtGui.QBrush(QtGui.QColor(0, 0, 0, 30))
-        self.font = QtGui.QFont('SansSerif', 8, QtGui.QFont.Normal)
+        self.white = QBrush(QColor(255, 255, 255))
+        self.black = QBrush(QColor(0, 0, 0))
+        self.grey = QBrush(QColor(0, 0, 0, 30))
+        self.font = QFont('SansSerif', 8, QFont.Normal)
         self.layerH = 20
         self.margeH = 22
         self.visibleList = []
         
     def paintEvent(self, ev=''):
         lH, mH = self.layerH, self.margeH
-        p = QtGui.QPainter(self)
-        p.setPen(QtGui.QPen(self.black))
-        p.setBrush(QtGui.QBrush(self.white))
+        p = QPainter(self)
+        p.setPen(QPen(self.black))
+        p.setBrush(QBrush(self.white))
         p.setFont(self.font)
         self.visibleList = []
         
@@ -36,7 +36,7 @@ class LayersCanvas(QtGui.QWidget):
         p.fillRect (0, 0, self.width(), self.height(), self.grey)
         p.fillRect (0, 0, self.width(), mH-2, self.white)
         p.drawLine (0, mH-2, self.width(), mH-2)
-        p.drawPixmap(82, 2, QtGui.QPixmap("icons/layer_eye.png"))
+        p.drawPixmap(82, 2, QPixmap("icons/layer_eye.png"))
         # curLayer
         p.fillRect(0, (self.parent.project.curLayer * lH) + mH-1,
                    self.width(), lH, self.white)
@@ -46,15 +46,15 @@ class LayersCanvas(QtGui.QWidget):
             y += lH
             p.drawText(4, y-6, layer.name)
             p.drawLine (0, y-1, self.width(), y-1)
-            rect = QtCore.QRect(82, y-19, 15, 15)
+            rect = QRect(82, y-19, 15, 15)
             self.visibleList.append(rect)
             p.drawRect(rect)
             if layer.visible:
                 p.fillRect(84, y-17, 12, 12, self.black)
         
     def event(self, event):
-        if (event.type() == QtCore.QEvent.MouseButtonPress and
-                       event.button()==QtCore.Qt.LeftButton):
+        if (event.type() == QEvent.MouseButtonPress and
+                       event.button()==Qt.LeftButton):
             item = self.layerAt(event.y())
             if item is not None:
                 self.parent.project.curLayer = item
@@ -66,13 +66,13 @@ class LayersCanvas(QtGui.QWidget):
                     self.parent.project.updateViewSign.emit()
                 self.update()
                 self.parent.project.updateViewSign.emit()
-        elif (event.type() == QtCore.QEvent.MouseButtonDblClick and
-                       event.button()==QtCore.Qt.LeftButton):
+        elif (event.type() == QEvent.MouseButtonDblClick and
+                       event.button()==Qt.LeftButton):
             item = self.layerAt(event.y())
             if item is not None:
                 self.parent.renameLayer(item)
                 self.update()
-        return QtGui.QWidget.event(self, event)
+        return QWidget.event(self, event)
     
     def layerAt(self, y):
         l = (y - 23) // 20
@@ -80,15 +80,15 @@ class LayersCanvas(QtGui.QWidget):
             return l
             
         
-class TimelineCanvas(QtGui.QWidget):
+class TimelineCanvas(QWidget):
     """ widget containing the timeline """
     def __init__(self, parent):
-        QtGui.QWidget.__init__(self, parent)
+        QWidget.__init__(self, parent)
         self.parent = parent
-        self.grey = QtGui.QBrush(QtGui.QColor(0, 0, 0, 30))
-        self.white = QtGui.QBrush(QtGui.QColor(255, 255, 255))
-        self.whitea = QtGui.QBrush(QtGui.QColor(255, 255, 255, 127))
-        self.black = QtGui.QBrush(QtGui.QColor(0, 0, 0))
+        self.grey = QBrush(QColor(0, 0, 0, 30))
+        self.white = QBrush(QColor(255, 255, 255))
+        self.whitea = QBrush(QColor(255, 255, 255, 127))
+        self.black = QBrush(QColor(0, 0, 0))
         self.frameWidth = 13
         self.frameHeight = 20
         self.margeX = 1
@@ -99,10 +99,10 @@ class TimelineCanvas(QtGui.QWidget):
     def paintEvent(self, ev=''):
         fW, fH = self.frameWidth, self.frameHeight
         mX, mY = self.margeX, self.margeY
-        p = QtGui.QPainter(self)
-        fontLight = QtGui.QFont('SansSerif', 7, QtGui.QFont.Light)
-        fontBold = QtGui.QFont('SansSerif', 8, QtGui.QFont.Normal)
-        p.setPen(QtGui.QPen(self.grey))
+        p = QPainter(self)
+        fontLight = QFont('SansSerif', 7, QFont.Light)
+        fontBold = QFont('SansSerif', 8, QFont.Normal)
+        p.setPen(QPen(self.grey))
         p.setBrush(self.whitea)
         
         # background
@@ -153,8 +153,8 @@ class TimelineCanvas(QtGui.QWidget):
                         w += 13
                     nx = x * fW + mX + 1
                     ny = y * fH + mY + 1
-                    framesRects.append(QtCore.QRect(nx, ny, w, h))
-                    strechrect = QtCore.QRect(nx+w-9, ny+h-9, 9, 9)
+                    framesRects.append(QRect(nx, ny, w, h))
+                    strechrect = QRect(nx+w-9, ny+h-9, 9, 9)
                     strechRects.append(strechrect)
                     self.strechBoxList[y].append(strechrect)
                 else:
@@ -172,8 +172,8 @@ class TimelineCanvas(QtGui.QWidget):
         return (minW, minH)
         
     def event(self, event):
-        if   (event.type() == QtCore.QEvent.MouseButtonPress and
-              event.button()==QtCore.Qt.LeftButton):
+        if   (event.type() == QEvent.MouseButtonPress and
+              event.button()==Qt.LeftButton):
             frame = self.frameAt(event.x())
             layer = self.layerAt(event.y())
             if frame is not None and layer is not None:
@@ -196,8 +196,8 @@ class TimelineCanvas(QtGui.QWidget):
             if frame is not None or layer is not None:
                 self.parent.project.updateViewSign.emit()
             return True
-        elif (event.type() == QtCore.QEvent.MouseMove and
-              event.buttons() == QtCore.Qt.LeftButton):
+        elif (event.type() == QEvent.MouseMove and
+              event.buttons() == Qt.LeftButton):
             frame = self.frameAt(event.x())
             if frame is not None:
                 if self.parent.selection:
@@ -209,7 +209,7 @@ class TimelineCanvas(QtGui.QWidget):
                 self.parent.project.curFrame = frame
                 self.parent.project.updateViewSign.emit()
             return True
-        return QtGui.QWidget.event(self, event)
+        return QWidget.event(self, event)
         
     def isInStrechBox(self, pos):
         for layer, i in enumerate(self.strechBoxList):
@@ -247,10 +247,10 @@ class TimelineCanvas(QtGui.QWidget):
             return l
         
         
-class TimelineWidget(QtGui.QWidget):
+class TimelineWidget(QWidget):
     """ widget containing timeline, layers and all their buttons """
     def __init__(self, project):
-        QtGui.QWidget.__init__(self)
+        QWidget.__init__(self)
         self.project = project
         
         self.selection = False
@@ -259,15 +259,15 @@ class TimelineWidget(QtGui.QWidget):
         ### viewer ###
         self.layersCanvas = LayersCanvas(self)
         self.layersV = Viewer()
-        self.layersV.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.layersV.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.layersV.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.layersV.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.layersV.setWidget(self.layersCanvas)
         
         self.timelineCanvas = TimelineCanvas(self)
         self.timelineV = Viewer()
         self.timelineV.setWidget(self.timelineCanvas)
-        self.timelineV.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
-        self.timelineV.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.timelineV.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.timelineV.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.timeVSize = (0, 0)
         self.timelineV.resyzing.connect(self.adjustSize)
         
@@ -300,7 +300,7 @@ class TimelineWidget(QtGui.QWidget):
             "icons/onionskin_next.png", self.onionskinNextClicked, True)
             
         ### play the animation ###
-        self.fpsW = QtGui.QSpinBox(self)
+        self.fpsW = QSpinBox(self)
         self.fpsW.setValue(self.project.fps)
         self.fpsW.setRange(1, 60)
         self.fpsW.setSuffix(" fps")
@@ -311,7 +311,7 @@ class TimelineWidget(QtGui.QWidget):
         self.playFrameB.state = "play"
 
         ### layout ###
-        layerTools = QtGui.QVBoxLayout()
+        layerTools = QVBoxLayout()
         layerTools.setSpacing(0)
         layerTools.addWidget(self.addLayerB)
         layerTools.addWidget(self.dupLayerB)
@@ -319,12 +319,12 @@ class TimelineWidget(QtGui.QWidget):
         layerTools.addWidget(self.mergeLayerB)
         layerTools.addStretch()
         
-        layerTools2 = QtGui.QHBoxLayout()
+        layerTools2 = QHBoxLayout()
         layerTools2.setSpacing(0)
         layerTools2.addWidget(self.upLayerB)
         layerTools2.addWidget(self.downLayerB)
         
-        canvasTools = QtGui.QHBoxLayout()
+        canvasTools = QHBoxLayout()
         canvasTools.setSpacing(0)
         canvasTools.addWidget(self.addFrameB)
         canvasTools.addWidget(self.dupFrameB)
@@ -337,7 +337,7 @@ class TimelineWidget(QtGui.QWidget):
         canvasTools.addWidget(self.repeatB)
         canvasTools.addWidget(self.playFrameB)
         
-        layout = QtGui.QGridLayout()
+        layout = QGridLayout()
         layout.setSpacing(4)
         layout.addLayout(layerTools, 0, 0)
         layout.addWidget(self.layersV, 0, 1)
@@ -566,19 +566,19 @@ class TimelineWidget(QtGui.QWidget):
 
     def repeatClicked(self):
         if self.project.loop:
-            self.repeatB.setIcon(QtGui.QIcon(QtGui.QPixmap("icons/play_no_repeat.png")))
+            self.repeatB.setIcon(QIcon(QPixmap("icons/play_no_repeat.png")))
             self.project.loop = False
         else:
-            self.repeatB.setIcon(QtGui.QIcon(QtGui.QPixmap("icons/play_repeat.png")))
+            self.repeatB.setIcon(QIcon(QPixmap("icons/play_repeat.png")))
             self.project.loop = True
         self.project.updateViewSign.emit()
 
     def playPauseClicked(self):
         """play the animation"""
         if self.playFrameB.state == 'play':
-            self.playFrameB.setIcon(QtGui.QIcon(QtGui.QPixmap("icons/play_pause.png")))
+            self.playFrameB.setIcon(QIcon(QPixmap("icons/play_pause.png")))
             self.playFrameB.state = "stop"
-            self.timer = QtCore.QTimer()
+            self.timer = QTimer()
             self.timer.timeout.connect(self.animate)
             self.f = self.project.curFrame
             self.fps = self.project.fps
@@ -595,7 +595,7 @@ class TimelineWidget(QtGui.QWidget):
     def playEnd(self):
         self.timer.stop()
         self.playFrameB.state = "play"
-        self.playFrameB.setIcon(QtGui.QIcon(QtGui.QPixmap("icons/play_play.png")))
+        self.playFrameB.setIcon(QIcon(QPixmap("icons/play_play.png")))
         self.project.playing = False
         self.project.updateViewSign.emit()
         

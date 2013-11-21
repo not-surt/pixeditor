@@ -5,39 +5,38 @@
 from __future__ import division
 from __future__ import print_function
 
-from PyQt4 import QtCore
-from PyQt4 import QtGui
-from PyQt4 import Qt
+from PyQt4.QtGui import *
+from PyQt4.QtCore import *
 
     
-class Dock(QtGui.QDockWidget):
+class Dock(QDockWidget):
     """ dock """
-    def __init__(self, title, parent=None, flags=QtCore.Qt.WindowFlags(0)):
-        QtGui.QDockWidget.__init__(self, title, parent, flags)
-        self.setTitleBarWidget(QtGui.QWidget())
+    def __init__(self, title, parent=None, flags=Qt.WindowFlags(0)):
+        QDockWidget.__init__(self, title, parent, flags)
+        self.setTitleBarWidget(QWidget())
         self.setTitleBarWidget(None)
-        orientation = Qt.Qt.Orientation(Qt.Qt.Horizontal)
+        orientation = Qt.Orientation(Qt.Horizontal)
     
-class Button(QtGui.QToolButton):
+class Button(QToolButton):
     """ button """
     def __init__(self, tooltip, iconUrl, connection, checkable=False):
-        QtGui.QToolButton.__init__(self)
+        QToolButton.__init__(self)
         self.setToolTip(tooltip)
         self.setAutoRaise(True)
         self.setCheckable(checkable)
-        self.setIconSize(QtCore.QSize(24, 24)) 
-        self.setIcon(QtGui.QIcon(QtGui.QPixmap(iconUrl)))
+        self.setIconSize(QSize(24, 24)) 
+        self.setIcon(QIcon(QPixmap(iconUrl)))
         self.clicked.connect(connection)
 
 
-class Background(QtGui.QPixmap):
+class Background(QPixmap):
     """ background of the scene"""
     def __init__(self, size, arg=16):
-        QtGui.QPixmap.__init__(self, size)
-        self.fill(QtGui.QColor(0, 0, 0, 0))
+        QPixmap.__init__(self, size)
+        self.fill(QColor(0, 0, 0, 0))
         if type(arg) is int and arg:
-            p = QtGui.QPainter(self)
-            brush = QtGui.QBrush(QtGui.QColor(0, 0, 0, 30))
+            p = QPainter(self)
+            brush = QBrush(QColor(0, 0, 0, 30))
             bol = True
             for x in range(0, size.width(), arg):
                 for y in range(0, size.height(), arg*2):
@@ -47,33 +46,33 @@ class Background(QtGui.QPixmap):
                         p.fillRect (x, y+arg, arg, arg, brush)
                 bol = not bol
         elif type(arg) is str:
-            brush = QtGui.QBrush(QtGui.QPixmap(arg))
-            p = QtGui.QPainter(self)
+            brush = QBrush(QPixmap(arg))
+            p = QPainter(self)
             p.fillRect (0, 0, size.width(), size.height(), brush)
 
 
-class Viewer(QtGui.QScrollArea):
+class Viewer(QScrollArea):
     """ QScrollArea you can move with midbutton"""
-    resyzing = QtCore.pyqtSignal(tuple)
+    resyzing = pyqtSignal(tuple)
     def __init__ (self):
-        QtGui.QScrollArea.__init__(self)
+        QScrollArea.__init__(self)
         
     def event(self, event):
         """ capture middle mouse event to move the view """
         # clic: save position
-        if   (event.type() == QtCore.QEvent.MouseButtonPress and
-              event.button() == QtCore.Qt.MidButton):
+        if   (event.type() == QEvent.MouseButtonPress and
+              event.button() == Qt.MidButton):
             self.mouseX, self.mouseY = event.x(), event.y()
             return True
         # drag: move the scrollbars
-        elif (event.type() == QtCore.QEvent.MouseMove and
-              event.buttons() == QtCore.Qt.MidButton):
+        elif (event.type() == QEvent.MouseMove and
+              event.buttons() == Qt.MidButton):
             self.horizontalScrollBar().setValue(
                 self.horizontalScrollBar().value() - (event.x() - self.mouseX))
             self.verticalScrollBar().setValue(
                 self.verticalScrollBar().value() - (event.y() - self.mouseY))
             self.mouseX, self.mouseY = event.x(), event.y()
             return True
-        elif (event.type() == QtCore.QEvent.Resize):
+        elif (event.type() == QEvent.Resize):
             self.resyzing.emit((event.size().width(), event.size().height()))
-        return QtGui.QScrollArea.event(self, event)
+        return QScrollArea.event(self, event)

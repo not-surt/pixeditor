@@ -3,26 +3,26 @@
 
 import sys
 import os
-from PyQt4 import QtCore
-from PyQt4 import QtGui
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 
 import xml.etree.ElementTree as ET
 
-class Project(QtCore.QObject):
+class Project(QObject):
     """ store all data that need to be saved"""
-    updateViewSign = QtCore.pyqtSignal()
-    updatePaletteSign = QtCore.pyqtSignal()
-    updateTimelineSign = QtCore.pyqtSignal()
-    updateTimelineSizeSign = QtCore.pyqtSignal()
-    updateBackgroundSign = QtCore.pyqtSignal()
-    updateFpsSign = QtCore.pyqtSignal()
-    toolChangedSign = QtCore.pyqtSignal()
-    penChangedSign = QtCore.pyqtSignal()
-    colorChangedSign = QtCore.pyqtSignal()
-    customPenSign = QtCore.pyqtSignal(list)
-    updateTitleSign = QtCore.pyqtSignal()
+    updateViewSign = pyqtSignal()
+    updatePaletteSign = pyqtSignal()
+    updateTimelineSign = pyqtSignal()
+    updateTimelineSizeSign = pyqtSignal()
+    updateBackgroundSign = pyqtSignal()
+    updateFpsSign = pyqtSignal()
+    toolChangedSign = pyqtSignal()
+    penChangedSign = pyqtSignal()
+    colorChangedSign = pyqtSignal()
+    customPenSign = pyqtSignal(list)
+    updateTitleSign = pyqtSignal()
     def __init__(self, parent):
-        QtCore.QObject.__init__(self)
+        QObject.__init__(self)
         self.parent = parent
         self.undoList = []
         self.redoList = []
@@ -37,18 +37,18 @@ class Project(QtCore.QObject):
         self.initProject()
         self.importResources()
         
-    def initProject(self, size=QtCore.QSize(64, 64), colorTable=None, frames=None):
+    def initProject(self, size=QSize(64, 64), colorTable=None, frames=None):
         self.size = size
         if colorTable:
             self.colorTable = colorTable
         else:
-            self.colorTable = [QtGui.qRgba(0, 0, 0, 0), QtGui.qRgb(0, 0, 0)]
+            self.colorTable = [qRgba(0, 0, 0, 0), qRgb(0, 0, 0)]
         self.color = 1
         if frames:
             self.timeline = Timeline(self, [Layer(self, frames, 'import')])
         else:
             self.timeline = Timeline(self, [Layer(self, [self.makeCanvas()], 'layer 1')])
-        self.bgColor = QtGui.QColor(150, 150, 150)
+        self.bgColor = QColor(150, 150, 150)
         self.bgPattern = 16
         self.url = None
         self.dirUrl = None
@@ -63,9 +63,9 @@ class Project(QtCore.QObject):
         if rootElem.attrib["version"] == "0.2":
             return self.importXml02(rootElem)
         sizeElem = rootElem.find("size").attrib
-        self.size = QtCore.QSize(int(sizeElem["width"]), int(sizeElem["height"]))
+        self.size = QSize(int(sizeElem["width"]), int(sizeElem["height"]))
         bgElem = rootElem.find("background").attrib
-        self.bgColor = QtGui.QColor(int(bgElem["color"]))
+        self.bgColor = QColor(int(bgElem["color"]))
         self.bgPattern = bgElem["pattern"]
         if type(self.bgPattern) is str and not os.path.isfile(self.bgPattern): 
             self.bgPattern = 16
@@ -91,7 +91,7 @@ class Project(QtCore.QObject):
             
     def importXml02(self, rootElem):
         sizeElem = rootElem.find("size").attrib
-        self.size = QtCore.QSize(int(sizeElem["width"]), int(sizeElem["height"]))
+        self.size = QSize(int(sizeElem["width"]), int(sizeElem["height"]))
         colorTableElem = rootElem.find("colors").text
         self.colorTable = [int(n) for n in colorTableElem.split(',')]
         framesElem = rootElem.find("frames")
@@ -136,7 +136,7 @@ class Project(QtCore.QObject):
     
     def importImg(self, size, colorTable, frames):
         self.timeline.applyToAllCanvas(
-                lambda c: Canvas(self, c.copy(QtCore.QRect(QtCore.QPoint(0, 0), size)), colorTable)
+                lambda c: Canvas(self, c.copy(QRect(QPoint(0, 0), size)), colorTable)
                 )
         self.size = size
         self.colorTable = colorTable
@@ -160,7 +160,7 @@ class Project(QtCore.QObject):
         self.brushDict = {}
         for i in importedModules:
             try:
-                self.brushList.append((i.name, QtGui.QPixmap(os.path.join(brushPath, i.icon))))
+                self.brushList.append((i.name, QPixmap(os.path.join(brushPath, i.icon))))
                 self.brushDict[i.name] = i.function
             except AttributeError:
                 print("error on brush import")
@@ -179,7 +179,7 @@ class Project(QtCore.QObject):
         self.penDict = {}
         for i in importedModules:
             try:
-                self.penList.append((i.name, QtGui.QPixmap(os.path.join(penPath, i.icon))))
+                self.penList.append((i.name, QPixmap(os.path.join(penPath, i.icon))))
                 self.penDict[i.name] = i.pixelList
             except AttributeError:
                 print("error on pen import")
@@ -223,12 +223,12 @@ class Project(QtCore.QObject):
             doList.append((obj, current, (self.timeline, 
                                           self.colorTable, 
                                           self.size,
-                                          QtGui.QColor(self.bgColor),
+                                          QColor(self.bgColor),
                                           self.bgPattern,
                                           self.url,
                                           self.fps)))
         elif obj == "background":
-            doList.append((obj, current, (QtGui.QColor(self.bgColor),
+            doList.append((obj, current, (QColor(self.bgColor),
                                           self.bgPattern)))
         if len(doList) > 50:
             doList.pop(0)
@@ -446,7 +446,7 @@ class Layer(list):
         else:
             self[frame] = canvas
         
-class Canvas(QtGui.QImage):
+class Canvas(QImage):
     """ Canvas for drawing"""
     def __init__(self, project, arg, col=False):
         """ arg can be:
@@ -454,15 +454,15 @@ class Canvas(QtGui.QImage):
                 a url string to load the image
                 a size tuple to create a new canvas """
         self.project = project
-        if isinstance(arg, QtGui.QImage):
-            QtGui.QImage.__init__(self, arg)
+        if isinstance(arg, QImage):
+            QImage.__init__(self, arg)
             if type(col) is list:
                 self.setColorTable(col)
         elif type(arg) is str:
-            QtGui.QImage.__init__(self)
+            QImage.__init__(self)
             self.load(arg)
-        elif isinstance(arg, QtCore.QSize):
-            QtGui.QImage.__init__(self, arg, QtGui.QImage.Format_Indexed8)
+        elif isinstance(arg, QSize):
+            QImage.__init__(self, arg, QImage.Format_Indexed8)
             if type(col) is list:
                 self.setColorTable(col)
             else:
@@ -478,7 +478,7 @@ class Canvas(QtGui.QImage):
         for i in li:
             nx, ny = x + offset[0], y + offset[1]
             if self.rect().contains(nx, ny):
-                self.setPixel(QtCore.QPoint(nx, ny), int(i))
+                self.setPixel(QPoint(nx, ny), int(i))
             x += 1
             if x >= exWidth:
                 x = 0
@@ -581,7 +581,7 @@ class Canvas(QtGui.QImage):
                     i = -i
                 x = p1.x() + i
                 y = int(step * i + p1.y() + 0.5)
-                self.drawPoint(QtCore.QPoint(x, y), color)
+                self.drawPoint(QPoint(x, y), color)
         else:
             step = (p2.x()-p1.x()) / (p2.y()-p1.y() or 1)
             for i in range(disty):
@@ -589,20 +589,20 @@ class Canvas(QtGui.QImage):
                     i = -i
                 y = p1.y() + i
                 x = int(step * i + p1.x() + 0.5)
-                self.drawPoint(QtCore.QPoint(x, y), color)
+                self.drawPoint(QPoint(x, y), color)
         self.drawPoint(p2, color)
 
     def drawPoint(self, point, color):
         if self.project.pen and len(self.project.pen[0]) == 2:
             for i, j in self.project.pen:
-                p = QtCore.QPoint(point.x()+i, point.y()+j)
+                p = QPoint(point.x()+i, point.y()+j)
                 if self.rect().contains(p) and self.project.brush(p.x()+p.y()):
                     self.setPixel(p, color)
         elif self.project.pen and  len(self.project.pen[0]) == 3:
             nc = self.colorCount()
             for i, j, c in self.project.pen:
                 if c < nc:
-                    p = QtCore.QPoint(point.x()+i, point.y()+j)
+                    p = QPoint(point.x()+i, point.y()+j)
                     if self.rect().contains(p):
                         self.setPixel(p, c)
 
@@ -613,7 +613,7 @@ class Canvas(QtGui.QImage):
             x, y = p[0], p[1]
             if self.rect().contains(x, y) and self.pixelIndex(x, y) == col1:
                 if self.project.brush(x + y):
-                    self.setPixel(QtCore.QPoint(x, y), col2)
+                    self.setPixel(QPoint(x, y), col2)
                 l.append((x+1, y))
                 l.append((x-1, y))
                 l.append((x, y+1))
@@ -627,14 +627,14 @@ class Canvas(QtGui.QImage):
     def clic(self, point, button):
         color = self.project.color
         tool = self.project.tool
-        if (((button == QtCore.Qt.LeftButton and tool == "pipette") or
-                (button == QtCore.Qt.RightButton and (tool == "pen" or tool == "fill"))) and
+        if (((button == Qt.LeftButton and tool == "pipette") or
+                (button == Qt.RightButton and (tool == "pen" or tool == "fill"))) and
                 self.rect().contains(point)):
             self.project.setColor(self.pixelIndex(point))
             self.lastPoint = False
         elif tool == "pen":
             self.project.saveToUndo("canvas")
-            if QtGui.QApplication.keyboardModifiers() == QtCore.Qt.ShiftModifier and self.lastPoint:
+            if QApplication.keyboardModifiers() == Qt.ShiftModifier and self.lastPoint:
                 self.drawLine(point, color)
             else:
                 self.drawPoint(point, color)
@@ -651,8 +651,8 @@ class Canvas(QtGui.QImage):
     def move(self, point, button):
         color = self.project.color
         tool = self.project.tool
-        if (((button == QtCore.Qt.LeftButton and tool == "pipette") or
-                (button == QtCore.Qt.RightButton and (tool == "pen" or tool == "fill"))) and
+        if (((button == Qt.LeftButton and tool == "pipette") or
+                (button == Qt.RightButton and (tool == "pen" or tool == "fill"))) and
                 self.rect().contains(point)):
             self.project.setColor(self.pixelIndex(point))
             self.lastPoint = False
