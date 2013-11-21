@@ -751,9 +751,13 @@ class MainWindow(QMainWindow):
             self.project.updateViewSign.emit()
 
     def replacePaletteAction(self):
+        #dir = QDir.current()
+        #dir.cd("resources/palette")
+        palettePath = os.path.abspath(os.path.join("resources", "palette"))
         url = QFileDialog.getOpenFileName(None, "open palette file",
-                                                os.path.join("resources", "palette"),
-                                                "Palette files (*.pal, *.gpl );;All files (*)")
+                                                #dir.path(),
+                                                palettePath,
+                                                "Palette files (*.pal, *.gpl);;All files (*)")
         if url:
             pal = import_palette(url, len(self.project.colorTable))
             if pal:
