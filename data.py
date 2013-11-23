@@ -189,7 +189,7 @@ class Project(QObject):
 
     def setColor(self, color):
         self.colorTable[self.color] = color.rgba()
-        self.colorChangedSign.emit()
+        #self.colorChangedSign.emit() # Cause sigsev?
         self.updatePaletteSign.emit()
 
     def setColorIndex(self, color):
