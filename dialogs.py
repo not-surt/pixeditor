@@ -36,13 +36,13 @@ class BackgroundDialog(QDialog):
         self.preview.fill(self.color)
         self.previewL = QLabel()
         self.previewL.setPixmap(self.preview)
-        
+
         ### square pattern ###
         self.squareRadio = QRadioButton("square", self)
         self.sizeL = QLabel("size :")
         self.sizeW = QLineEdit("16", self)
         self.sizeW.setValidator(QIntValidator(self.sizeW))
-        
+
         ### file pattern ###
         self.fileRadio = QRadioButton("file", self)
         ### model to store images ###
@@ -61,7 +61,7 @@ class BackgroundDialog(QDialog):
         self.fileName = self.modImgList.item(0).path
         sel = self.modImgList.createIndex(0, 0)
         self.imgList.selectionModel().select(sel, QItemSelectionModel.Select)
-        
+
         ### init ###
         if type(arg) is int:
             self.pattern = "square"
@@ -78,7 +78,7 @@ class BackgroundDialog(QDialog):
                     self.imgList.selectionModel().select(sel, QItemSelectionModel.Select)
                     self.fileName = arg
             self.size = 16
-            
+
         ### preview ###
         self.updatePreview()
         # connect
@@ -86,7 +86,7 @@ class BackgroundDialog(QDialog):
         self.squareRadio.toggled.connect(self.radioToggled)
         self.sizeW.textChanged.connect(self.sizeChanged)
         self.imgList.selectionModel().selectionChanged.connect(self.fileChanged)
-        
+
         ### apply, undo ###
         self.cancelW = QPushButton('cancel', self)
         self.cancelW.clicked.connect(self.cancelClicked)
@@ -98,14 +98,14 @@ class BackgroundDialog(QDialog):
         grid.setSpacing(4)
         grid.addWidget(self.colorL, 0, 1)
         grid.addWidget(self.colorW, 0, 2)
-        
+
         grid.addWidget(self.squareRadio, 1, 0)
         grid.addWidget(self.sizeL, 1, 1)
         grid.addWidget(self.sizeW, 1, 2)
-        
+
         grid.addWidget(self.fileRadio, 2, 0)
         grid.addWidget(self.imgList, 2, 1, 2, 2)
-        
+
         grid.addWidget(self.previewL, 0, 3, 4, 1)
 
         okBox = QHBoxLayout()
@@ -120,7 +120,7 @@ class BackgroundDialog(QDialog):
 
         self.setLayout(vBox)
         self.exec_()
-        
+
     def colorClicked(self):
         ok, color = ColorDialog(False, self.color).getQColor()
         if ok:
@@ -128,7 +128,7 @@ class BackgroundDialog(QDialog):
             self.colorIcon.fill(self.color)
             self.colorW.setIcon(QIcon(self.colorIcon))
             self.updatePreview()
-        
+
     def sizeChanged(self, s):
         try:
             self.size = int(s)
@@ -136,20 +136,20 @@ class BackgroundDialog(QDialog):
             self.size = 0
         if self.pattern == "square":
             self.updatePreview()
-        
+
     def radioToggled(self):
         if self.squareRadio.isChecked():
             self.pattern = "square"
         elif self.fileRadio.isChecked():
             self.pattern = "file"
         self.updatePreview()
-            
+
     def fileChanged(self):
         sel = self.imgList.selectionModel().selectedIndexes()[0].row()
         self.fileName = self.modImgList.item(sel).path
         if self.pattern == "file":
             self.updatePreview()
-        
+
     def updatePreview(self):
         self.preview.fill(self.color)
         p = QPainter(self.preview)
@@ -158,7 +158,7 @@ class BackgroundDialog(QDialog):
         elif self.pattern == "file":
             p.drawPixmap(16, 16, Background(QSize(96, 96), self.fileName))
         self.previewL.setPixmap(self.preview)
-        
+
     def okClicked(self):
         try:
             self.size = int(self.sizeW.text())
@@ -177,6 +177,7 @@ class BackgroundDialog(QDialog):
                 return self.color, self.fileName
         return None, None
 
+
 class NewDialog(QDialog):
     def __init__(self, size=QSize(64, 64)):
         QDialog.__init__(self)
@@ -194,18 +195,18 @@ class NewDialog(QDialog):
         self.hW.setValidator(QIntValidator(self.hW))
         ### error ###
         self.errorL = QLabel("")
-        
+
         ### palette ###
         palettePath = os.path.join("resources", "palette")
         ls = os.listdir(palettePath)
         ls.sort()
         self.paletteDict = {}
-            
+
         self.paletteW = QComboBox(self)
         for i in ls:
             self.paletteDict[os.path.splitext(i)[0]] = os.path.join(palettePath, i)
             self.paletteW.addItem(os.path.splitext(i)[0])
-            
+
         ### apply, undo ###
         self.cancelW = QPushButton('cancel', self)
         self.cancelW.clicked.connect(self.cancelClicked)
@@ -235,8 +236,10 @@ class NewDialog(QDialog):
 
         self.setLayout(vBox)
         self.exec_()
+
     def get_palette_list(self):
         pass
+
     def newClicked(self):
         try:
             self.size = QSize(int(self.wW.text()), int(self.hW.text()))
@@ -255,6 +258,7 @@ class NewDialog(QDialog):
     def getReturn(self):
         if self.result():
             return self.size, self.palette
+
 
 class CropDialog(QDialog):
     def __init__(self, size):
@@ -348,7 +352,7 @@ class CropDialog(QDialog):
         except ValueError:
             hOffset = 0
         if w > 0 and h > 0:
-            self.rect = QRect(wOffset, hOffset, w, h) 
+            self.rect = QRect(wOffset, hOffset, w, h)
             self.accept()
         else:
             self.errorL.setText("ERROR : The size must be greater than 0 !")
@@ -360,18 +364,19 @@ class CropDialog(QDialog):
         if self.result():
             return self.rect
 
+
 class ResizeDialog(QDialog):
     def __init__(self, size):
         QDialog.__init__(self)
         self.setWindowTitle("resize animation")
         self.w, self.h = size.width(), size.height()
-        
+
         self.factor = 1
         self.factorW = QComboBox(self)
-        self.factorW.addItems(["0.25","0.5","1","2","4"])
+        self.factorW.addItems(["0.25", "0.5", "1", "2", "4"])
         self.factorW.setCurrentIndex(2)
         self.factorW.activated[str].connect(self.factorClicked)
-        
+
         ### instructions ###
         self.wL = QLabel("width")
         self.wL.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
@@ -419,12 +424,12 @@ class ResizeDialog(QDialog):
 
         self.setLayout(vBox)
         self.exec_()
-        
+
     def factorClicked(self, n):
         self.factor = float(n)
         self.newWL.setText(str(int(self.w * self.factor)))
         self.newHL.setText(str(int(self.h * self.factor)))
-        
+
     def resizeClicked(self):
         self.accept()
 
@@ -434,6 +439,7 @@ class ResizeDialog(QDialog):
     def getReturn(self):
         if self.result():
             return self.factor
+
 
 class RenameLayerDialog(QDialog):
     def __init__(self, name):
@@ -481,8 +487,10 @@ class RenameLayerDialog(QDialog):
         if self.result():
             return self.name
 
+
 if __name__ == '__main__':
     import sys
+
     app = QApplication(sys.argv)
     #~ mainWin = RenameLayerDialog("layer 1")
     #~ mainWin = ResizeDialog((24, 32))

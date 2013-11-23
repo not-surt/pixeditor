@@ -28,9 +28,7 @@ import os
 
 from data import Project
 from timeline import TimelineWidget
-from sidebar import PaletteWidget
-from sidebar import ContextWidget
-from sidebar import OptionsWidget
+from sidebar import *
 from dialogs import *
 from widget import Dock
 from import_export import *
@@ -94,7 +92,7 @@ class Scene(QGraphicsView):
         self.setTransformationAnchor(
             QGraphicsView.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
-        self.setMinimumSize(400, 400)
+        self.setMinimumSize(256, 256)
         self.scene.setSceneRect(0, 0,
                                 self.project.size.width(), self.project.size.height())
         # background
@@ -177,7 +175,7 @@ class Scene(QGraphicsView):
                 self.itemList[n].update()
             else:
                 self.itemList[n].setVisible(False)
-            # onionskin
+                # onionskin
         layer = self.project.timeline[self.project.curLayer]
         if (not self.project.playing and self.project.onionSkinPrev and
                 self.project.timeline[self.project.curLayer].visible):
@@ -261,7 +259,7 @@ class Scene(QGraphicsView):
                     self.project.curFrame, self.project.makeCanvas())
                 self.project.updateTimelineSign.emit()
                 self.project.updateViewSign.emit()
-            self.canvasList[l].clic(pos, event.buttons())
+            self.canvasList[l].click(pos, event.buttons())
             self.itemList[l].pixmap().convertFromImage(self.canvasList[l])
             self.itemList[l].update()
         # move or select
@@ -355,12 +353,26 @@ class MainWindow(QMainWindow):
         QApplication.setOrganizationName("z-uo")
         QApplication.setApplicationName("pixeditor")
 
+        self.colorDialog = QColorDialog()
+        self.colorDialog.setOptions(QColorDialog.ShowAlphaChannel | QColorDialog.NoButtons | QColorDialog.DontUseNativeDialog)
+        #self.colorDialog.hide()
+
         self.project = Project(self)
+
+        self.colorWidget = ColorWidget(self)
+        self.colorWidget.colorChanged.connect(self.project.setColor)
+
+        def setColorWrapper():
+            self.colorWidget.setColor(QColor(self.project.colorTable[self.project.color]))
+
+        self.project.colorChangedSign.connect(setColorWrapper)
+
         self.contextWidget = ContextWidget(self.project)
         self.optionsWidget = OptionsWidget(self.project)
         self.paletteWidget = PaletteWidget(self.project)
         self.timelineWidget = TimelineWidget(self.project)
         self.scene = Scene(self.project)
+        self.toolsWidget = ToolWidget(self)
 
         self.updateTitle()
         self.project.updateTitleSign.connect(self.updateTitle)
@@ -368,10 +380,20 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.scene)
         self.setDockNestingEnabled(True)
 
-        #toolsDock = QDockWidget("Tools")
-        #toolsDock.setWidget(self.toolsWidget)
-        #toolsDock.setObjectName("toolsDock")
-        #self.addDockWidget(Qt.LeftDockWidgetArea, toolsDock)
+        toolsDock = QDockWidget("Tools")
+        toolsDock.setWidget(self.toolsWidget)
+        toolsDock.setObjectName("toolsDock")
+        self.addDockWidget(Qt.LeftDockWidgetArea, toolsDock)
+
+        #colorDialogDock = QDockWidget("Color Dialog")
+        #colorDialogDock.setWidget(self.colorDialog)
+        #colorDialogDock.setObjectName("colorDialog")
+        #self.addDockWidget(Qt.LeftDockWidgetArea, colorDialogDock)
+
+        colorDock = QDockWidget("Color")
+        colorDock.setWidget(self.colorWidget)
+        colorDock.setObjectName("colorDock")
+        self.addDockWidget(Qt.LeftDockWidgetArea, colorDock)
 
         contextDock = QDockWidget("Context")
         contextDock.setWidget(self.contextWidget)
@@ -427,15 +449,23 @@ class MainWindow(QMainWindow):
         moveToolAction.setShortcut('4')
         selectToolAction.setShortcut('5')
 
+        self.toolsWidget.addAction(penToolAction)
+        self.toolsWidget.addAction(pipetteToolAction)
+        self.toolsWidget.addAction(fillToolAction)
+        self.toolsWidget.addAction(moveToolAction)
+        self.toolsWidget.addAction(selectToolAction)
+
         ### File menu ###
         menubar = self.menuBar()
         openAction = QAction('Open', self)
         openAction.triggered.connect(self.openAction)
+        openAction.setShortcut(QKeySequence.Open)
         saveAsAction = QAction('Save as', self)
         saveAsAction.triggered.connect(self.saveAsAction)
+        saveAsAction.setShortcut(QKeySequence.SaveAs)
         saveAction = QAction('Save', self)
         saveAction.triggered.connect(self.saveAction)
-        saveAction.setShortcut('Ctrl+S')
+        saveAction.setShortcut(QKeySequence.Save)
 
         importNewAction = QAction('Import as new', self)
         importNewAction.triggered.connect(self.importAsNewAction)
@@ -447,7 +477,7 @@ class MainWindow(QMainWindow):
 
         exitAction = QAction('Exit', self)
         exitAction.triggered.connect(self.exitAction)
-        exitAction.setShortcut('Ctrl+Q')
+        exitAction.setShortcut(QKeySequence.Quit)
 
         fileMenu = menubar.addMenu('File')
         fileMenu.addAction(openAction)
@@ -463,20 +493,20 @@ class MainWindow(QMainWindow):
         ### Edit menu ###
         undoAction = QAction('Undo', self)
         undoAction.triggered.connect(self.project.undo)
-        undoAction.setShortcut('Ctrl+Z')
+        undoAction.setShortcut(QKeySequence.Undo)
         redoAction = QAction('Redo', self)
         redoAction.triggered.connect(self.project.redo)
-        redoAction.setShortcut('Ctrl+Y')
+        redoAction.setShortcut(QKeySequence.Redo)
 
         cutAction = QAction('Cut', self)
         cutAction.triggered.connect(self.timelineWidget.cut)
-        cutAction.setShortcut('Ctrl+X')
+        cutAction.setShortcut(QKeySequence.Cut)
         copyAction = QAction('Copy', self)
         copyAction.triggered.connect(self.timelineWidget.copy)
-        copyAction.setShortcut('Ctrl+C')
+        copyAction.setShortcut(QKeySequence.Copy)
         pasteAction = QAction('Paste', self)
         pasteAction.triggered.connect(self.timelineWidget.paste)
-        pasteAction.setShortcut('Ctrl+V')
+        pasteAction.setShortcut(QKeySequence.Paste)
 
         editMenu = menubar.addMenu('Edit')
         editMenu.addAction(undoAction)
@@ -516,7 +546,7 @@ class MainWindow(QMainWindow):
         cropAction.triggered.connect(self.cropAction)
         resizeAction = QAction('Resize', self)
         resizeAction.triggered.connect(self.resizeAction)
-        replacePaletteAction = QAction('replace palette', self)
+        replacePaletteAction = QAction('Replace palette', self)
         replacePaletteAction.triggered.connect(self.replacePaletteAction)
         prefAction = QAction('Background', self)
         prefAction.triggered.connect(self.backgroundAction)
@@ -525,20 +555,23 @@ class MainWindow(QMainWindow):
         projectMenu.addAction(newAction)
         projectMenu.addAction(cropAction)
         projectMenu.addAction(resizeAction)
+        projectMenu.addSeparator()
         projectMenu.addAction(replacePaletteAction)
+        projectMenu.addSeparator()
         projectMenu.addAction(prefAction)
 
         ### resources menu ###
-        savePaletteAction = QAction('save  current palette', self)
+        savePaletteAction = QAction('Save current palette', self)
         savePaletteAction.triggered.connect(self.savePaletteAction)
-        savePenAction = QAction('save custom pen', self)
+        savePenAction = QAction('Save custom pen', self)
         savePenAction.triggered.connect(self.savePenAction)
-        reloadResourcesAction = QAction('reload resources', self)
+        reloadResourcesAction = QAction('Reload resources', self)
         reloadResourcesAction.triggered.connect(self.reloadResourcesAction)
 
         resourcesMenu = menubar.addMenu('Resources')
         resourcesMenu.addAction(savePaletteAction)
         resourcesMenu.addAction(savePenAction)
+        resourcesMenu.addSeparator()
         resourcesMenu.addAction(reloadResourcesAction)
 
         ### shortcuts ###
@@ -589,30 +622,35 @@ class MainWindow(QMainWindow):
         self.project.toolChangedSign.emit()
         self.optionsWidget.optionFill.hide()
         self.optionsWidget.optionSelect.hide()
+        self.optionsWidget.optionMove.hide()
 
     def pipetteToolAction(self):
         self.project.tool = "pipette"
         self.project.toolChangedSign.emit()
         self.optionsWidget.optionFill.hide()
         self.optionsWidget.optionSelect.hide()
+        self.optionsWidget.optionMove.hide()
 
     def fillToolAction(self):
         self.project.tool = "fill"
         self.project.toolChangedSign.emit()
         self.optionsWidget.optionFill.show()
         self.optionsWidget.optionSelect.hide()
+        self.optionsWidget.optionMove.hide()
 
     def moveToolAction(self):
         self.project.tool = "move"
         self.project.toolChangedSign.emit()
         self.optionsWidget.optionFill.hide()
         self.optionsWidget.optionSelect.hide()
+        self.optionsWidget.optionMove.show()
 
     def selectToolAction(self):
         self.project.tool = "select"
         self.project.toolChangedSign.emit()
         self.optionsWidget.optionFill.hide()
         self.optionsWidget.optionSelect.show()
+        self.optionsWidget.optionMove.hide()
 
     ######## File menu #################################################
     def openAction(self):
@@ -755,9 +793,9 @@ class MainWindow(QMainWindow):
         #dir.cd("resources/palette")
         palettePath = os.path.abspath(os.path.join("resources", "palette"))
         url = QFileDialog.getOpenFileName(None, "open palette file",
-                                                #dir.path(),
-                                                palettePath,
-                                                "Palette files (*.pal, *.gpl);;All files (*)")
+                                          #dir.path(),
+                                          palettePath,
+                                          "Palette files (*.pal, *.gpl);;All files (*)")
         if url:
             pal = import_palette(url, len(self.project.colorTable))
             if pal:

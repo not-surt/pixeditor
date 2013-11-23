@@ -8,6 +8,7 @@ from PyQt4.QtGui import *
 
 import xml.etree.ElementTree as ET
 
+
 class Project(QObject):
     """ store all data that need to be saved"""
     updateViewSign = pyqtSignal()
@@ -21,22 +22,24 @@ class Project(QObject):
     colorChangedSign = pyqtSignal()
     customPenSign = pyqtSignal(list)
     updateTitleSign = pyqtSignal()
+
     def __init__(self, parent):
         QObject.__init__(self)
         self.parent = parent
         self.undoList = []
         self.redoList = []
         self.pen = ((0, 0),)
-        self.brush = lambda n : True
+        self.brush = lambda n: True
         self.tool = "pen"
         self.fillMode = "adjacent"
         self.selectMode = "cut"
+        self.moveMode = "clip"
         self.loop = False
         self.onionSkinPrev = False
         self.onionSkinNext = False
         self.initProject()
         self.importResources()
-        
+
     def initProject(self, size=QSize(64, 64), colorTable=None, frames=None):
         self.size = size
         if colorTable:
@@ -58,7 +61,7 @@ class Project(QObject):
         self.playing = False
         self.saved = True
         self.updateTimelineSizeSign.emit()
-        
+
     def importXml(self, rootElem):
         if rootElem.attrib["version"] == "0.2":
             return self.importXml02(rootElem)
@@ -67,7 +70,7 @@ class Project(QObject):
         bgElem = rootElem.find("background").attrib
         self.bgColor = QColor(int(bgElem["color"]))
         self.bgPattern = bgElem["pattern"]
-        if type(self.bgPattern) is str and not os.path.isfile(self.bgPattern): 
+        if type(self.bgPattern) is str and not os.path.isfile(self.bgPattern):
             self.bgPattern = 16
         self.fps = int(rootElem.find("fps").attrib["fps"])
         colorTableElem = rootElem.find("colortable").text
@@ -75,7 +78,7 @@ class Project(QObject):
         timelineElem = rootElem.find("timeline")
         self.timeline = Timeline(self, [])
         for layerElem in timelineElem:
-            layer = Layer(self, [], str(layerElem.attrib["name"]), 
+            layer = Layer(self, [], str(layerElem.attrib["name"]),
                           bool(int(layerElem.attrib["visible"])))
             for f in layerElem.itertext():
                 if f == "0":
@@ -88,7 +91,7 @@ class Project(QObject):
         self.saved = True
         self.updateTitleSign.emit()
         self.updateTimelineSizeSign.emit()
-            
+
     def importXml02(self, rootElem):
         sizeElem = rootElem.find("size").attrib
         self.size = QSize(int(sizeElem["width"]), int(sizeElem["height"]))
@@ -109,13 +112,13 @@ class Project(QObject):
         self.saved = True
         self.updateTitleSign.emit()
         self.updateTimelineSizeSign.emit()
-        
+
     def exportXml(self):
         rootElem = ET.Element("pix", version="0.3")
-        ET.SubElement(rootElem, "size", 
-                      width=str(self.size.width()), 
+        ET.SubElement(rootElem, "size",
+                      width=str(self.size.width()),
                       height=str(self.size.height()))
-        ET.SubElement(rootElem, "background", 
+        ET.SubElement(rootElem, "background",
                       color=str(self.bgColor.rgb()),
                       pattern=str(self.bgPattern))
         fpsElem = ET.SubElement(rootElem, "fps", fps=str(self.fps))
@@ -133,16 +136,16 @@ class Project(QObject):
                 else:
                     frameElem.text = "0"
         return rootElem
-    
+
     def importImg(self, size, colorTable, frames):
         self.timeline.applyToAllCanvas(
-                lambda c: Canvas(self, c.copy(QRect(QPoint(0, 0), size)), colorTable)
-                )
+            lambda c: Canvas(self, c.copy(QRect(QPoint(0, 0), size)), colorTable)
+        )
         self.size = size
         self.colorTable = colorTable
         self.timeline.append(Layer(self, frames, 'import'))
         self.updateTimelineSizeSign.emit()
-        
+
     def importResources(self):
         # brush
         # not really sure about what i'm doing here...
@@ -155,7 +158,7 @@ class Project(QObject):
         importedModules = []
         for i in brushFiles:
             importedModules.append(__import__(i))
-            exec("%s = sys.modules[i]"%(i,))
+            exec("%s = sys.modules[i]" % (i,))
         self.brushList = []
         self.brushDict = {}
         for i in importedModules:
@@ -164,7 +167,7 @@ class Project(QObject):
                 self.brushDict[i.name] = i.function
             except AttributeError:
                 print("error on brush import")
-        # pen
+            # pen
         penPath = os.path.join("resources", "pen")
         ls = os.listdir(penPath)
         ls.sort()
@@ -174,7 +177,7 @@ class Project(QObject):
         importedModules = []
         for i in penFiles:
             importedModules.append(__import__(i))
-            exec("%s = sys.modules[i]"%(i,))
+            exec("%s = sys.modules[i]" % (i,))
         self.penList = []
         self.penDict = {}
         for i in importedModules:
@@ -183,18 +186,23 @@ class Project(QObject):
                 self.penDict[i.name] = i.pixelList
             except AttributeError:
                 print("error on pen import")
-        
+
     def setColor(self, color):
+        self.colorTable[self.color] = color.rgba()
+        self.colorChangedSign.emit()
+        self.updatePaletteSign.emit()
+
+    def setColorIndex(self, color):
         self.color = color
         self.colorChangedSign.emit()
         self.updatePaletteSign.emit()
-        
+
     ######## undo/redo #################################################
     def saveToUndo(self, obj, save=False):
         if self.saved:
             self.saved = False
             self.updateTitleSign.emit()
-            
+
         if not save:
             doList = self.undoList
             self.redoList = []
@@ -202,7 +210,7 @@ class Project(QObject):
             doList = self.redoList
         elif save == "undoList":
             doList = self.undoList
-        
+
         current = (self.curFrame, self.curLayer)
         if obj == "canvas":
             doList.append((obj, current, self.timeline.getCanvas().copy_()))
@@ -211,17 +219,17 @@ class Project(QObject):
         elif obj == "colorTable":
             doList.append((obj, current, list(self.colorTable)))
         elif obj == "size":
-            doList.append((obj, current,(self.timeline.copy(), 
-                                         self.size)))
+            doList.append((obj, current, (self.timeline.copy(),
+                                          self.size)))
         elif obj == "colorTable_frames":
-            doList.append((obj, current, (self.timeline.deepCopy(), 
+            doList.append((obj, current, (self.timeline.deepCopy(),
                                           list(self.colorTable))))
         elif obj == "timeline_canvas":
             doList.append((obj, current, self.timeline.deepCopy()))
         elif obj == "all":
             # no copy 
-            doList.append((obj, current, (self.timeline, 
-                                          self.colorTable, 
+            doList.append((obj, current, (self.timeline,
+                                          self.colorTable,
                                           self.size,
                                           QColor(self.bgColor),
                                           self.bgPattern,
@@ -285,7 +293,7 @@ class Project(QObject):
                 self.bgColor = save[0]
                 self.bgPattern = save[1]
                 self.updateBackgroundSign.emit()
-                
+
             self.updateViewSign.emit()
             self.updateTimelineSign.emit()
             self.updateTimelineSizeSign.emit()
@@ -358,30 +366,30 @@ class Project(QObject):
             if arg:layer is a list : make a layer with it"""
         if empty:
             return Layer(self)
-        name = "layer %s" %(len(self.timeline)+1)
+        name = "layer %s" % (len(self.timeline) + 1)
         if not layer:
             return Layer(self, [self.makeCanvas()], name)
         elif type(layer) == list:
             return Layer(self, layer, name)
-            
-        
+
+
 class Timeline(list):
     def __init__(self, project, layers=[]):
         list.__init__(self, layers)
         self.project = project
-        
+
     def copy(self):
         t = Timeline(self.project, [])
         for i in self:
             t.append(i.copy())
         return t
-            
+
     def deepCopy(self):
         t = Timeline(self.project, [])
         for i in self:
             t.append(i.deepCopy())
         return t
-        
+
     def getCanvas(self):
         """ return the current canvas """
         return self[self.project.curLayer].getCanvas(self.project.curFrame)
@@ -389,47 +397,48 @@ class Timeline(list):
     def getCanvasList(self, index):
         """ return the list of all canvas at a specific frame """
         return [layer.getCanvas(index) for layer in self]
-                    
+
     def getVisibleCanvasList(self, index):
         """ return the list of all canvas at a specific frame """
         return [layer.getCanvas(index) for layer in self if layer.visible]
-                    
+
     def getAllCanvas(self):
         """ retrun all canvas """
         for l in self:
             for f in l:
                 if f:
                     yield f
-                    
+
     def applyToAllCanvas(self, function):
         for y, l in enumerate(self):
             for x, c in enumerate(l):
                 if c:
                     self[y][x] = function(c)
-                    
+
     def frameCount(self):
         return max([len(l) for l in self])
-        
+
     def frameVisibleCount(self):
         return max([len(l) for l in self if l.visible])
-        
+
+
 class Layer(list):
     def __init__(self, project, frames=[], name='', visible=True):
         list.__init__(self, frames)
         self.project = project
         self.name = name
         self.visible = visible
-                
+
     def copy(self):
         return Layer(self.project, self, self.name)
-        
+
     def deepCopy(self):
         layer = Layer(self.project, self, self.name)
         for n, i in enumerate(layer):
             if i:
                 layer[n] = layer[n].copy_()
         return layer
-        
+
     def getCanvas(self, index):
         """ return the canvas at a specific frame """
         while 0 <= index < len(self):
@@ -437,7 +446,7 @@ class Layer(list):
                 return self[index]
             else:
                 index -= 1
-        
+
     def insertCanvas(self, frame, canvas):
         while frame >= len(self):
             self.append(0)
@@ -445,9 +454,11 @@ class Layer(list):
             self.insert(frame, canvas)
         else:
             self[frame] = canvas
-        
+
+
 class Canvas(QImage):
     """ Canvas for drawing"""
+
     def __init__(self, project, arg, col=False):
         """ arg can be:
                 a Canvas/QImage instance to be copied
@@ -490,27 +501,27 @@ class Canvas(QImage):
             for x in range(self.width()):
                 l.append(self.pixelIndex(x, y))
         return l
-    
+
     def returnAsMatrix(self, rect):
         l = []
         i = 0
-        for y in range(max(rect.top(), 0), min(rect.bottom()+1, self.height())):
+        for y in range(max(rect.top(), 0), min(rect.bottom() + 1, self.height())):
             l.append([])
-            for x in range(max(rect.left(), 0), min(rect.right()+1, self.width())):
+            for x in range(max(rect.left(), 0), min(rect.right() + 1, self.width())):
                 l[i].append(self.pixelIndex(x, y))
             i += 1
         return l
-        
+
     def copy_(self):
         return Canvas(self.project, self)
-        
+
     def mergeCanvas(self, canvas):
         for y in range(self.height()):
             for x in range(self.width()):
                 col = canvas.pixelIndex(x, y)
                 if col != 0:
                     self.setPixel(x, y, col)
-                    
+
     def delColor(self, color):
         for y in range(self.height()):
             for x in range(self.width()):
@@ -518,7 +529,7 @@ class Canvas(QImage):
                 if pixCol == color:
                     self.setPixel(x, y, 0)
                 elif pixCol > color:
-                     self.setPixel(x, y, pixCol-1)
+                    self.setPixel(x, y, pixCol - 1)
 
     def swapColor(self, col1, col2):
         for y in range(self.height()):
@@ -527,13 +538,13 @@ class Canvas(QImage):
                     self.setPixel(x, y, col2)
                 elif self.pixelIndex(x, y) == col2:
                     self.setPixel(x, y, col1)
-                    
+
     def replaceColor(self, col1, col2):
         for y in range(self.height()):
             for x in range(self.width()):
                 if self.pixelIndex(x, y) == col1:
                     self.setPixel(x, y, col2)
-        
+
     def mixColortable(self, colorTable):
         selfColorTable = self.colorTable()
         colorTable = list(colorTable)
@@ -541,7 +552,7 @@ class Canvas(QImage):
             if i in colorTable:
                 p = colorTable.index(i)
                 selfColorTable[n] = p
-            else: 
+            else:
                 if len(colorTable) == 256:
                     return None
                 selfColorTable[n] = len(colorTable)
@@ -551,7 +562,7 @@ class Canvas(QImage):
             for x in range(self.width()):
                 self.setPixel(x, y, selfColorTable[self.pixelIndex(x, y)])
         return colorTable
-        
+
     def sniffColortable(self, colorTable):
         colorTable = list(colorTable)
         for y in range(self.height()):
@@ -568,14 +579,14 @@ class Canvas(QImage):
     def clear(self):
         self.project.saveToUndo("canvas")
         self.fill(0)
-    
+
     def drawLine(self, p2, color):
         p1 = self.lastPoint
         # http://fr.wikipedia.org/wiki/Algorithme_de_trac%C3%A9_de_segment_de_Bresenham
-        distx = abs(p2.x()-p1.x())
-        disty = abs(p2.y()-p1.y())
+        distx = abs(p2.x() - p1.x())
+        disty = abs(p2.y() - p1.y())
         if distx > disty:
-            step = (p2.y()-p1.y()) / (p2.x()-p1.x() or 1)
+            step = (p2.y() - p1.y()) / (p2.x() - p1.x() or 1)
             for i in range(distx):
                 if p1.x() - p2.x() > 0:
                     i = -i
@@ -583,7 +594,7 @@ class Canvas(QImage):
                 y = int(step * i + p1.y() + 0.5)
                 self.drawPoint(QPoint(x, y), color)
         else:
-            step = (p2.x()-p1.x()) / (p2.y()-p1.y() or 1)
+            step = (p2.x() - p1.x()) / (p2.y() - p1.y() or 1)
             for i in range(disty):
                 if p1.y() - p2.y() > 0:
                     i = -i
@@ -595,14 +606,14 @@ class Canvas(QImage):
     def drawPoint(self, point, color):
         if self.project.pen and len(self.project.pen[0]) == 2:
             for i, j in self.project.pen:
-                p = QPoint(point.x()+i, point.y()+j)
-                if self.rect().contains(p) and self.project.brush(p.x()+p.y()):
+                p = QPoint(point.x() + i, point.y() + j)
+                if self.rect().contains(p) and self.project.brush(p.x() + p.y()):
                     self.setPixel(p, color)
-        elif self.project.pen and  len(self.project.pen[0]) == 3:
+        elif self.project.pen and len(self.project.pen[0]) == 3:
             nc = self.colorCount()
             for i, j, c in self.project.pen:
                 if c < nc:
-                    p = QPoint(point.x()+i, point.y()+j)
+                    p = QPoint(point.x() + i, point.y() + j)
                     if self.rect().contains(p):
                         self.setPixel(p, c)
 
@@ -614,23 +625,23 @@ class Canvas(QImage):
             if self.rect().contains(x, y) and self.pixelIndex(x, y) == col1:
                 if self.project.brush(x + y):
                     self.setPixel(QPoint(x, y), col2)
-                l.append((x+1, y))
-                l.append((x-1, y))
-                l.append((x, y+1))
-                l.append((x, y-1))
-                
+                l.append((x + 1, y))
+                l.append((x - 1, y))
+                l.append((x, y + 1))
+                l.append((x, y - 1))
+
     def delRect(self, rect):
-        for y in range(max(rect.top(), 0), min(rect.bottom()+1, self.height())):
-            for x in range(max(rect.left(), 0), min(rect.right()+1, self.width())):
+        for y in range(max(rect.top(), 0), min(rect.bottom() + 1, self.height())):
+            for x in range(max(rect.left(), 0), min(rect.right() + 1, self.width())):
                 self.setPixel(x, y, 0)
-        
-    def clic(self, point, button):
+
+    def click(self, point, button):
         color = self.project.color
         tool = self.project.tool
         if (((button == Qt.LeftButton and tool == "pipette") or
-                (button == Qt.RightButton and (tool == "pen" or tool == "fill"))) and
+                 (button == Qt.RightButton and (tool == "pen" or tool == "fill"))) and
                 self.rect().contains(point)):
-            self.project.setColor(self.pixelIndex(point))
+            self.project.setColorIndex(self.pixelIndex(point))
             self.lastPoint = False
         elif tool == "pen":
             self.project.saveToUndo("canvas")
@@ -640,7 +651,7 @@ class Canvas(QImage):
                 self.drawPoint(point, color)
             self.lastPoint = point
         elif (self.rect().contains(point) and tool == "fill" and
-              color != self.pixelIndex(point)):
+                      color != self.pixelIndex(point)):
             self.project.saveToUndo("canvas")
             if self.project.fillMode == "adjacent":
                 self.floodFill(point, self.pixelIndex(point), color)
@@ -652,9 +663,9 @@ class Canvas(QImage):
         color = self.project.color
         tool = self.project.tool
         if (((button == Qt.LeftButton and tool == "pipette") or
-                (button == Qt.RightButton and (tool == "pen" or tool == "fill"))) and
+                 (button == Qt.RightButton and (tool == "pen" or tool == "fill"))) and
                 self.rect().contains(point)):
-            self.project.setColor(self.pixelIndex(point))
+            self.project.setColorIndex(self.pixelIndex(point))
             self.lastPoint = False
         elif tool == "pen":
             if self.lastPoint:

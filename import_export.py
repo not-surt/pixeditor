@@ -24,7 +24,8 @@ def open_pix(dirName):
             print("Can't open file")
             return None, None
     return None, None
-    
+
+
 def save_pix(xml, url):
     try:
         save = open(url, "w")
@@ -35,22 +36,23 @@ def save_pix(xml, url):
     except IOError:
         print("Can't open file")
         return None
-        
+
+
 def get_save_url(dirName=None, ext="pix"):
     if not dirName:
         dirName = os.path.expanduser("~")
     while True:
-        url = str(QFileDialog.getSaveFileName(None, "save %s file" %(ext), 
-                                        dirName, "%s files (*.%s )" %(ext, ext)))
+        url = str(QFileDialog.getSaveFileName(None, "save %s file" % (ext),
+                                              dirName, "%s files (*.%s )" % (ext, ext)))
         if url:
             dirName = os.path.dirname(url)
-            if os.path.splitext(url)[1].lower() == ".%s" %(ext):
+            if os.path.splitext(url)[1].lower() == ".%s" % (ext):
                 return url
             else:
-                url = os.path.splitext(url)[0] + ".%s" %(ext)
+                url = os.path.splitext(url)[0] + ".%s" % (ext)
                 if os.path.isfile(url):
-                    message = "The file %s allready exist.\n" %(os.path.basename(url))
-                    message = "%sDo you want to overwrite it ?" %(message)
+                    message = "The file %s allready exist.\n" % (os.path.basename(url))
+                    message = "%sDo you want to overwrite it ?" % (message)
                     messageBox = QMessageBox()
                     messageBox.setWindowTitle("Overwrite ?")
                     messageBox.setText(message);
@@ -61,7 +63,7 @@ def get_save_url(dirName=None, ext="pix"):
                     if ret:
                         return url
                 else:
-                    message = "The file will be save as %s.\n" %(os.path.basename(url))
+                    message = "The file will be save as %s.\n" % (os.path.basename(url))
                     messageBox = QMessageBox()
                     messageBox.setWindowTitle("Save ?")
                     messageBox.setText(message);
@@ -96,7 +98,7 @@ def import_img(project, dirName, size=QSize(0, 0), colorTable=[0]):
                 mov.jumpToFrame(i)
                 img = Canvas(project, mov.currentImage())
                 canvasList.append((img, str(url)))
-                
+
     for img, url in canvasList:
         if img.format() == QImage.Format_Indexed8:
             colorMixed = img.mixColortable(colorTable)
@@ -108,7 +110,7 @@ def import_img(project, dirName, size=QSize(0, 0), colorTable=[0]):
             size = size.expandedTo(img.size())
         else:
             canceled.append(url)
-            
+
     for n, img in enumerate(imgs):
         img = Canvas(project, img.convertToFormat(QImage.Format_Indexed8, colorTable))
         if img.size() != size:
@@ -117,18 +119,19 @@ def import_img(project, dirName, size=QSize(0, 0), colorTable=[0]):
             img = Canvas(project, size, colorTable)
             img.loadFromList(li, width)
         imgs[n] = img
-    
+
     if canceled:
         text = "Failed to import some files (too much colors):"
         for i in canceled:
-            text = "%s\n %s" %(text, i)
+            text = "%s\n %s" % (text, i)
         message = QMessageBox()
         message.setWindowTitle("Import error")
         message.setText(text);
         message.setIcon(QMessageBox.Warning)
         message.addButton("Ok", QMessageBox.AcceptRole)
         message.exec_();
-    return  size, imgs, colorTable
+    return size, imgs, colorTable
+
 
 def export_png_all(project, url):
     url = os.path.splitext(str(url))[0]
@@ -136,7 +139,7 @@ def export_png_all(project, url):
     fnexist = False
     for nl, layer in enumerate(project.timeline, 1):
         for nf, im in enumerate(layer, 1):
-            fn = "%s%s%s.png" %(url, nl, nf)
+            fn = "%s%s%s.png" % (url, nl, nf)
             if os.path.isfile(fn):
                 fnexist = True
             if im:
@@ -159,19 +162,20 @@ def export_png_all(project, url):
         for i in files:
             i[1].save(i[0])
 
+
 def export_png(project, fullUrl=""):
     isUrl = False
     while not isUrl:
         fullUrl = QFileDialog.getSaveFileName(
-                None, "export (.png)", fullUrl, "PNG files (*.png)", 
-                QFileDialog.DontConfirmOverwrite)
+            None, "export (.png)", fullUrl, "PNG files (*.png)",
+            QFileDialog.DontConfirmOverwrite)
         if not fullUrl:
             return
         isUrl = True
         url = os.path.splitext(str(fullUrl))[0]
         nFrames = project.timeline.frameVisibleCount()
         for i in range(nFrames):
-            fn = "%s%s%s.png" %(url, "0"*(len(str(nFrames))-len(str(i))), i)
+            fn = "%s%s%s.png" % (url, "0" * (len(str(nFrames)) - len(str(i))), i)
             if os.path.isfile(fn):
                 isUrl = False
                 message = QMessageBox()
@@ -188,8 +192,8 @@ def export_png(project, fullUrl=""):
                     isUrl = False
                     break
     for i in range(nFrames):
-        fn = "%s%s%s.png" %(url, "0"*(len(str(nFrames))-len(str(i))), i)
-        
+        fn = "%s%s%s.png" % (url, "0" * (len(str(nFrames)) - len(str(i))), i)
+
         canvasList = project.timeline.getVisibleCanvasList(i)
         if len(canvasList) == 1:
             canvas = canvasList[0]
@@ -202,11 +206,12 @@ def export_png(project, fullUrl=""):
                     p.drawImage(0, 0, c)
             p.end()
         canvas.save(fn)
-        
+
     # convert all png to a gif with imagemagick
-    os.system("convert -delay 1/12 -dispose Background -loop 0 %s*.png %s.gif" %(url, url))
+    os.system("convert -delay 1/12 -dispose Background -loop 0 %s*.png %s.gif" % (url, url))
     return fullUrl
-    
+
+
 def import_palette(url, nColor=0):
     """ take a file palette (.gpl or .pal) and return a list of QRgba """
     save = open(url, "r")
@@ -235,27 +240,31 @@ def import_palette(url, nColor=0):
     while len(pal) < nColor:
         pal.append(QColor(0, 0, 0).rgb())
     return pal
-    
+
+
 def export_palette(pal):
     """take a list of QRgb and write a palette file .pal
        without the first alpha color"""
-    text = "JASC-PAL\n0100\n%s\n" %(len(pal)-1)
+    text = "JASC-PAL\n0100\n%s\n" % (len(pal) - 1)
     for i in pal:
         if i == 0:
             continue
         col = QColor.fromRgb(i)
-        text = "%s%s %s %s\n" %(text, col.red(), col.green(), col.blue())
+        text = "%s%s %s %s\n" % (text, col.red(), col.green(), col.blue())
     return text
-    
+
+
 def export_pen(pen, name):
-    text = '#!/usr/bin/env python\n#-*- coding: utf-8 -*-\n\nname = "%s"\nicon = "custom.png"\npixelList = (' %(name)
+    text = '#!/usr/bin/env python\n#-*- coding: utf-8 -*-\n\nname = "%s"\nicon = "custom.png"\npixelList = (' % (name)
     for i in pen:
-        text = "%s(%s, %s)," %(text, i[0], i[1])
-    text = "%s)" %(text)
+        text = "%s(%s, %s)," % (text, i[0], i[1])
+    text = "%s)" % (text)
     return text
-    
+
+
 if __name__ == '__main__':
     import sys
+
     app = QApplication(sys.argv)
     print(get_save_url())
     sys.exit(app.exec_())
