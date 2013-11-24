@@ -649,6 +649,9 @@ class PaletteWidget(QWidget):
         self.addAction(copyAction)
         pasteAction = QAction("Paste", self)
         self.addAction(pasteAction)
+        lockAction = QAction("Lock", self)
+        lockAction.setCheckable(True)
+        self.addAction(lockAction)
 
         ### palette ###
         self.paletteCanvas = PaletteCanvas(self)

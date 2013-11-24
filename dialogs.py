@@ -179,6 +179,7 @@ class BackgroundDialog(QDialog):
 
 
 class NewDialog(QDialog):
+    defaultSize = (64, 64)
     sizeRange = (16, 2048)
     sizePresets = [(32, 32),
                    (64, 64),
@@ -192,7 +193,7 @@ class NewDialog(QDialog):
                    (1280, 720),
                    (1920, 1080)]
 
-    def __init__(self, size=QSize(64, 64)):
+    def __init__(self, size=defaultSize):
         QDialog.__init__(self)
         self.setWindowTitle("New Animation")
 
@@ -207,10 +208,10 @@ class NewDialog(QDialog):
         ### Size ###
         widthSpin = QSpinBox(self)
         widthSpin.setRange(*NewDialog.sizeRange)
-        widthSpin.setValue(size.width())
+        widthSpin.setValue(size[0])
         heightSpin = QSpinBox(self)
         heightSpin.setRange(*NewDialog.sizeRange)
-        heightSpin.setValue(size.height())
+        heightSpin.setValue(size[1])
 
         def applyPreset(i):
             widthSpin.setValue(NewDialog.sizePresets[i][0])
