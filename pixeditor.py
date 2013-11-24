@@ -786,16 +786,19 @@ class MainWindow(QMainWindow):
 
     ######## Project menu ##############################################
     def newAction(self):
-        size, palette = NewDialog().getReturn()
-        if size and palette:
-            self.project.saveToUndo("all")
-            self.project.initProject(size, palette)
-            self.project.updateViewSign.emit()
-            self.project.updatePaletteSign.emit()
-            self.project.updateTimelineSign.emit()
-            self.project.updateBackgroundSign.emit()
-            self.project.updateFpsSign.emit()
-            self.updateTitle()
+        dialog = NewDialog()
+        if dialog.exec_() == QDialog.Accepted:
+            size = QSize(dialog.resultData["width"], dialog.resultData["height"])
+            palette = import_palette(dialog.resultData["palette"])
+            if size and palette:
+                self.project.saveToUndo("all")
+                self.project.initProject(size, palette)
+                self.project.updateViewSign.emit()
+                self.project.updatePaletteSign.emit()
+                self.project.updateTimelineSign.emit()
+                self.project.updateBackgroundSign.emit()
+                self.project.updateFpsSign.emit()
+                self.updateTitle()
 
     def cropAction(self):
         rect = CropDialog(self.project.size).getReturn()

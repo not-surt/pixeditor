@@ -179,85 +179,79 @@ class BackgroundDialog(QDialog):
 
 
 class NewDialog(QDialog):
+    sizeRange = (16, 2048)
+    sizePresets = [(32, 32),
+                   (64, 64),
+                   (128, 128),
+                   (256, 256),
+                   None,
+                   (320, 240),
+                   (640, 480),
+                   (1024, 768),
+                   None,
+                   (1280, 720),
+                   (1920, 1080)]
+
     def __init__(self, size=QSize(64, 64)):
         QDialog.__init__(self)
-        self.setWindowTitle("new animation")
+        self.setWindowTitle("New Animation")
 
-        ### instructions ###
-        self.instL = QLabel("Enter the size of the new animation :")
-        ### width ###
-        self.wL = QLabel("width")
-        self.wW = QLineEdit(str(size.width()), self)
-        self.wW.setValidator(QIntValidator(self.wW))
-        ### height ###
-        self.hL = QLabel("height")
-        self.hW = QLineEdit(str(size.height()), self)
-        self.hW.setValidator(QIntValidator(self.hW))
-        ### error ###
-        self.errorL = QLabel("")
+        ### Presets ###
+        presetsCombo = QComboBox(self)
+        for preset in NewDialog.sizePresets:
+            if preset is None:
+                presetsCombo.insertSeparator(presetsCombo.count())
+            else:
+                presetsCombo.addItem(str(preset[0]) + "x" + str(preset[1]), preset)
 
-        ### palette ###
+        ### Size ###
+        widthSpin = QSpinBox(self)
+        widthSpin.setRange(*NewDialog.sizeRange)
+        widthSpin.setValue(size.width())
+        heightSpin = QSpinBox(self)
+        heightSpin.setRange(*NewDialog.sizeRange)
+        heightSpin.setValue(size.height())
+
+        def applyPreset(i):
+            widthSpin.setValue(NewDialog.sizePresets[i][0])
+            heightSpin.setValue(NewDialog.sizePresets[i][1])
+
+        presetsCombo.activated.connect(applyPreset)
+        #presetsCombo.setCurrentIndex(0)
+
+        ### Palette ###
         palettePath = os.path.join("resources", "palette")
         ls = os.listdir(palettePath)
         ls.sort()
-        self.paletteDict = {}
+        paletteDict = {}
 
-        self.paletteW = QComboBox(self)
+        paletteCombo = QComboBox(self)
         for i in ls:
-            self.paletteDict[os.path.splitext(i)[0]] = os.path.join(palettePath, i)
-            self.paletteW.addItem(os.path.splitext(i)[0])
+            paletteDict[os.path.splitext(i)[0]] = os.path.join(palettePath, i)
+            paletteCombo.addItem(os.path.splitext(i)[0])
 
-        ### apply, undo ###
-        self.cancelW = QPushButton('cancel', self)
-        self.cancelW.clicked.connect(self.cancelClicked)
-        self.newW = QPushButton('new', self)
-        self.newW.clicked.connect(self.newClicked)
-        self.newW.setDefault(True)
+        buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self)
+        buttonBox.accepted.connect(self.accept)
+        buttonBox.rejected.connect(self.reject)
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setFrameShadow(QFrame.Sunken)
 
-        grid = QGridLayout()
-        grid.setSpacing(4)
-        grid.addWidget(self.instL, 0, 0, 1, 2)
-        grid.addWidget(self.wL, 1, 0)
-        grid.addWidget(self.hL, 2, 0)
-        grid.addWidget(self.wW, 1, 1)
-        grid.addWidget(self.hW, 2, 1)
-        grid.addWidget(self.errorL, 3, 0, 1, 2)
-        grid.addWidget(self.paletteW, 4, 0, 1, 2)
+        layout = QFormLayout()
+        layout.addRow("&Preset", presetsCombo)
+        layout.addRow("&Width", widthSpin)
+        layout.addRow("&Height", heightSpin)
+        layout.addRow(separator)
+        layout.addRow("P&alette", paletteCombo)
+        layout.addRow(buttonBox)
 
-        okBox = QHBoxLayout()
-        okBox.addStretch(0)
-        okBox.addWidget(self.cancelW)
-        okBox.addWidget(self.newW)
+        self.setLayout(layout)
+        def acceptDialog():
+             self.resultData = { "width": widthSpin.value(),
+                                 "height": heightSpin.value(),
+                                 "palette": paletteDict[paletteCombo.currentText()]}
 
-        vBox = QVBoxLayout()
-        vBox.addLayout(grid)
-        vBox.addStretch(0)
-        vBox.addLayout(okBox)
-
-        self.setLayout(vBox)
-        self.exec_()
-
-    def get_palette_list(self):
-        pass
-
-    def newClicked(self):
-        try:
-            self.size = QSize(int(self.wW.text()), int(self.hW.text()))
-        except ValueError:
-            self.errorL.setText("ERROR : You must enter a number !")
-            return
-        self.palette = import_palette(self.paletteDict[self.paletteW.currentText()])
-        if self.size.isEmpty():
-            self.errorL.setText("ERROR : The size must be greater than 0 !")
-        else:
-            self.accept()
-
-    def cancelClicked(self):
-        self.reject()
-
-    def getReturn(self):
-        if self.result():
-            return self.size, self.palette
+        self.accepted.connect(acceptDialog)
 
 
 class CropDialog(QDialog):

@@ -46,7 +46,7 @@ class Project(QObject):
             self.colorTable = colorTable
         else:
             self.colorTable = [qRgb(0, 0, 0), qRgb(255, 255, 255)]
-        self.color = 1
+        self.color = 0
         self.transparent = 0
         if frames:
             self.timeline = Timeline(self, [Layer(self, frames, 'import')])
@@ -538,7 +538,7 @@ class Canvas(QImage):
         for y in range(self.height()):
             for x in range(self.width()):
                 col = canvas.pixelIndex(x, y)
-                if col != 0:
+                if col != self.transparent:
                     self.setPixel(x, y, col)
 
     def delColor(self, color):
@@ -546,7 +546,7 @@ class Canvas(QImage):
             for x in range(self.width()):
                 pixCol = self.pixelIndex(x, y)
                 if pixCol == color:
-                    self.setPixel(x, y, 0)
+                    self.setPixel(x, y, self.transparent)
                 elif pixCol > color:
                     self.setPixel(x, y, pixCol - 1)
 
@@ -597,7 +597,7 @@ class Canvas(QImage):
     ######## draw ######################################################
     def clear(self):
         self.project.saveToUndo("canvas")
-        self.fill(0)
+        self.fill(self.transparency)
 
     def drawLine(self, p2, color):
         p1 = self.lastPoint
@@ -652,7 +652,7 @@ class Canvas(QImage):
     def delRect(self, rect):
         for y in range(max(rect.top(), 0), min(rect.bottom() + 1, self.height())):
             for x in range(max(rect.left(), 0), min(rect.right() + 1, self.width())):
-                self.setPixel(x, y, 0)
+                self.setPixel(x, y, self.transparency)
 
     def click(self, point, button):
         color = self.project.color

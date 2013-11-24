@@ -123,17 +123,8 @@ class ColorComponentSlider(QSlider):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        #brush = QBrush(QColor(Qt.red))
-        #painter.fillRect(self.rect(), brush)
-        #pen = QColor(Qt.blue)
-        #painter.setPen(pen)
-        #painter.drawRect(self.rect().adjusted(0, 0, -1, -1))
         for i in range(0, self.width() - 1):
-            #painter.setPen(ColorSpaceSlidersWidget.getColorComponent(self.__color, self.__component))
-            #color = QColor.fromHsl(0, 127, (i / (self.width() - 1)) * 255)
             color = setColorComponent(self.__color, self.__component, (i / (self.width() - 1)) * (self.maximum() - self.minimum()))
-            #painter.setPen(color)
-            #painter.drawLine(i, 0, i, self.height() - 1)
             painter.fillRect(i, 0, 1, self.height(), color)
             pass
         i = (self.value() - self.minimum()) / (self.maximum() - self.minimum()) * (self.width() - 1)
@@ -141,8 +132,8 @@ class ColorComponentSlider(QSlider):
         halfHeight = self.height() // 2
         painter.fillRect(i - handleSize, 0, handleSize, halfHeight, QColor(Qt.black))
         painter.fillRect(i, 0, handleSize, halfHeight, QColor(Qt.white))
-        painter.fillRect(i - handleSize, halfHeight, handleSize, halfHeight, QColor(Qt.white))
-        painter.fillRect(i, halfHeight, handleSize, halfHeight, QColor(Qt.black))
+        painter.fillRect(i - handleSize, halfHeight, handleSize, self.height() - halfHeight, QColor(Qt.white))
+        painter.fillRect(i, halfHeight, handleSize, self.height() - halfHeight, QColor(Qt.black))
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
