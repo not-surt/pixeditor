@@ -389,43 +389,45 @@ class PaletteCanvas(QWidget):
         event.mimeData().formats()
         gridX, gridY = self.swatchPointToGrid(event.pos().x(), event.pos().y())
         dropIndex = self.swatchGridToIndex(math.floor(gridX), math.floor(gridY))
-        if dropIndex is not None and dropIndex < len(self.parent.project.colorTable):
+        if dropIndex is not None:
             # Insert colour
-            if event.keyboardModifiers() & Qt.ControlModifier and event.keyboardModifiers() & Qt.ShiftModifier:
+            if dropIndex < self.swatches and event.keyboardModifiers() & Qt.ControlModifier and event.keyboardModifiers() & Qt.ShiftModifier:
+                dropIndex = dropIndex if dropIndex < len(self.parent.project.colorTable) else len(self.parent.project.colorTable)
                 pos = dropIndex + (0 if gridX - math.floor(gridX) < 0.5 else 1)
                 colorTable = self.parent.project.colorTable
                 self.parent.project.colorTable = colorTable[:pos] + colorTable[
                                                                     self.dragIndex:self.dragIndex + 1] + colorTable[
                                                                                                          pos:]
                 self.parent.updateColorTable()
-            # Replace colour
-            elif event.keyboardModifiers() & Qt.ShiftModifier:
-                self.parent.project.colorTable[dropIndex] = event.mimeData().colorData().rgba()
-                #self.parent.project.updatePaletteSign.emit()
-                self.parent.updateColorTable()
-            # Move colour
-            elif event.keyboardModifiers() & Qt.ControlModifier:
-                pos = dropIndex + (0 if gridX - math.floor(gridX) < 0.5 else 1)
-                colorTable = self.parent.project.colorTable
-                if pos < self.dragIndex:
-                    self.parent.project.colorTable = colorTable[:pos] + colorTable[
-                                                                        self.dragIndex:self.dragIndex + 1] + colorTable[
-                                                                                                             pos:self.dragIndex] + colorTable[
-                                                                                                                                   self.dragIndex + 1:]
+            if dropIndex < len(self.parent.project.colorTable):
+                # Replace colour
+                if event.keyboardModifiers() & Qt.ShiftModifier:
+                    self.parent.project.colorTable[dropIndex] = event.mimeData().colorData().rgba()
+                    #self.parent.project.updatePaletteSign.emit()
                     self.parent.updateColorTable()
-                elif pos > self.dragIndex:
-                    self.parent.project.colorTable = colorTable[:self.dragIndex] + colorTable[
-                                                                                   self.dragIndex + 1:pos] + colorTable[
-                                                                                                             self.dragIndex:self.dragIndex + 1] + colorTable[
-                                                                                                                                                  pos:]
+                # Move colour
+                elif event.keyboardModifiers() & Qt.ControlModifier:
+                    pos = dropIndex + (0 if gridX - math.floor(gridX) < 0.5 else 1)
+                    colorTable = self.parent.project.colorTable
+                    if pos < self.dragIndex:
+                        self.parent.project.colorTable = colorTable[:pos] + colorTable[
+                                                                            self.dragIndex:self.dragIndex + 1] + colorTable[
+                                                                                                                 pos:self.dragIndex] + colorTable[
+                                                                                                                                       self.dragIndex + 1:]
+                        self.parent.updateColorTable()
+                    elif pos > self.dragIndex:
+                        self.parent.project.colorTable = colorTable[:self.dragIndex] + colorTable[
+                                                                                       self.dragIndex + 1:pos] + colorTable[
+                                                                                                                 self.dragIndex:self.dragIndex + 1] + colorTable[
+                                                                                                                                                      pos:]
+                        self.parent.updateColorTable()
+                # Swap colours
+                else:
+                    temp = self.parent.project.colorTable[dropIndex]
+                    self.parent.project.colorTable[dropIndex] = event.mimeData().colorData().rgba()
+                    self.parent.project.colorTable[self.dragIndex] = temp
+                    #self.parent.project.updatePaletteSign.emit()
                     self.parent.updateColorTable()
-            # Swap colours
-            else:
-                temp = self.parent.project.colorTable[dropIndex]
-                self.parent.project.colorTable[dropIndex] = event.mimeData().colorData().rgba()
-                self.parent.project.colorTable[self.dragIndex] = temp
-                #self.parent.project.updatePaletteSign.emit()
-                self.parent.updateColorTable()
         event.acceptProposedAction()
 
     def getItem(self, x, y):
