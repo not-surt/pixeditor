@@ -354,7 +354,7 @@ class MainWindow(QMainWindow):
         QApplication.setApplicationName("pixeditor")
 
         self.colorDialog = QColorDialog()
-        self.colorDialog.setOptions(QColorDialog.ShowAlphaChannel | QColorDialog.NoButtons | QColorDialog.DontUseNativeDialog)
+        self.colorDialog.setOptions(QColorDialog.NoButtons)
         #self.colorDialog.hide()
 
         self.project = Project(self)
@@ -393,6 +393,16 @@ class MainWindow(QMainWindow):
         toolsDock.setObjectName("toolsDock")
         self.addDockWidget(Qt.LeftDockWidgetArea, toolsDock)
 
+        contextDock = QDockWidget("Context")
+        contextDock.setWidget(self.contextWidget)
+        contextDock.setObjectName("contextDock")
+        self.addDockWidget(Qt.LeftDockWidgetArea, contextDock)
+
+        optionsDock = QDockWidget("Options")
+        optionsDock.setWidget(self.optionsWidget)
+        optionsDock.setObjectName("optionsDock")
+        self.addDockWidget(Qt.LeftDockWidgetArea, optionsDock)
+
         #colorDialogDock = QDockWidget("Color Dialog")
         #colorDialogDock.setWidget(self.colorDialog)
         #colorDialogDock.setObjectName("colorDialog")
@@ -422,16 +432,6 @@ class MainWindow(QMainWindow):
         self.tabifyDockWidget(hsvDock, hslDock)
         self.tabifyDockWidget(hslDock, cmykDock)
         rgbDock.raise_()
-
-        contextDock = QDockWidget("Context")
-        contextDock.setWidget(self.contextWidget)
-        contextDock.setObjectName("contextDock")
-        self.addDockWidget(Qt.LeftDockWidgetArea, contextDock)
-
-        optionsDock = QDockWidget("Options")
-        optionsDock.setWidget(self.optionsWidget)
-        optionsDock.setObjectName("optionsDock")
-        self.addDockWidget(Qt.LeftDockWidgetArea, optionsDock)
 
         paletteDock = QDockWidget("Palette")
         paletteDock.setWidget(self.paletteWidget)
