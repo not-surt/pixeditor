@@ -17,9 +17,9 @@ class Project(QObject):
     updateTimelineSizeSign = pyqtSignal()
     updateBackgroundSign = pyqtSignal()
     updateFpsSign = pyqtSignal()
-    toolChangedSign = pyqtSignal()
-    penChangedSign = pyqtSignal()
-    colorChangedSign = pyqtSignal()
+    toolChanged = pyqtSignal()
+    penChanged = pyqtSignal()
+    colorChanged = pyqtSignal()
     customPenSign = pyqtSignal(list)
     updateTitleSign = pyqtSignal()
 
@@ -188,14 +188,16 @@ class Project(QObject):
                 print("error on pen import")
 
     def setColor(self, color):
-        self.colorTable[self.color] = color.rgba()
-        #self.colorChangedSign.emit() # Cause sigsev?
-        self.updatePaletteSign.emit()
+        if self.colorTable[self.color] != color.rgba():
+            self.colorTable[self.color] = color.rgba()
+            self.colorChanged.emit()
+            self.updatePaletteSign.emit()
 
     def setColorIndex(self, color):
-        self.color = color
-        self.colorChangedSign.emit()
-        self.updatePaletteSign.emit()
+        if self.color != color:
+            self.color = color
+            self.colorChanged.emit()
+            self.updatePaletteSign.emit()
 
     ######## undo/redo #################################################
     def saveToUndo(self, obj, save=False):

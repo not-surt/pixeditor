@@ -120,9 +120,9 @@ class Scene(QGraphicsView):
         self.scene.addItem(self.penItem)
         self.penItem.setZValue(103)
         self.penItem.hide()
-        self.project.penChangedSign.connect(self.changePen)
-        self.project.toolChangedSign.connect(self.changePen)
-        self.project.colorChangedSign.connect(self.changePen)
+        self.project.penChanged.connect(self.changePen)
+        self.project.toolChanged.connect(self.changePen)
+        self.project.colorChanged.connect(self.changePen)
         self.changePen()
 
         self.project.updateViewSign.connect(self.changeFrame)
@@ -359,13 +359,21 @@ class MainWindow(QMainWindow):
 
         self.project = Project(self)
 
-        self.colorWidget = ColorWidget(self)
-        self.colorWidget.colorChanged.connect(self.project.setColor)
+        self.rgbWidget = RgbSlidersWidget(self)
+        self.rgbWidget.colorChanged.connect(self.project.setColor)
+        self.project.colorChanged.connect(lambda widget=self: widget.rgbWidget.setColor(QColor(widget.project.colorTable[widget.project.color])))
 
-        def setColorWrapper():
-            self.colorWidget.setColor(QColor(self.project.colorTable[self.project.color]))
+        self.hsvWidget = HsvSlidersWidget(self)
+        self.hsvWidget.colorChanged.connect(self.project.setColor)
+        self.project.colorChanged.connect(lambda widget=self: widget.hsvWidget.setColor(QColor(widget.project.colorTable[widget.project.color])))
 
-        self.project.colorChangedSign.connect(setColorWrapper)
+        self.hslWidget = HslSlidersWidget(self)
+        self.hslWidget.colorChanged.connect(self.project.setColor)
+        self.project.colorChanged.connect(lambda widget=self: widget.hslWidget.setColor(QColor(widget.project.colorTable[widget.project.color])))
+
+        self.cmykWidget = CmykSlidersWidget(self)
+        self.cmykWidget.colorChanged.connect(self.project.setColor)
+        self.project.colorChanged.connect(lambda widget=self: widget.cmykWidget.setColor(QColor(widget.project.colorTable[widget.project.color])))
 
         self.contextWidget = ContextWidget(self.project)
         self.optionsWidget = OptionsWidget(self.project)
@@ -390,10 +398,30 @@ class MainWindow(QMainWindow):
         #colorDialogDock.setObjectName("colorDialog")
         #self.addDockWidget(Qt.LeftDockWidgetArea, colorDialogDock)
 
-        colorDock = QDockWidget("Color")
-        colorDock.setWidget(self.colorWidget)
-        colorDock.setObjectName("colorDock")
-        self.addDockWidget(Qt.LeftDockWidgetArea, colorDock)
+        rgbDock = QDockWidget("RGB")
+        rgbDock.setWidget(self.rgbWidget)
+        rgbDock.setObjectName("rgbDock")
+        self.addDockWidget(Qt.LeftDockWidgetArea, rgbDock)
+
+        hsvDock = QDockWidget("HSV")
+        hsvDock.setWidget(self.hsvWidget)
+        hsvDock.setObjectName("hsvDock")
+        self.addDockWidget(Qt.LeftDockWidgetArea, hsvDock)
+
+        hslDock = QDockWidget("HSL")
+        hslDock.setWidget(self.hslWidget)
+        hslDock.setObjectName("hslDock")
+        self.addDockWidget(Qt.LeftDockWidgetArea, hslDock)
+
+        cmykDock = QDockWidget("CMYK")
+        cmykDock.setWidget(self.cmykWidget)
+        cmykDock.setObjectName("cmykDock")
+        self.addDockWidget(Qt.LeftDockWidgetArea, cmykDock)
+
+        self.tabifyDockWidget(rgbDock, hsvDock)
+        self.tabifyDockWidget(hsvDock, hslDock)
+        self.tabifyDockWidget(hslDock, cmykDock)
+        rgbDock.raise_()
 
         contextDock = QDockWidget("Context")
         contextDock.setWidget(self.contextWidget)
@@ -442,7 +470,7 @@ class MainWindow(QMainWindow):
         toolbar.addAction(moveToolAction)
         toolbar.addAction(selectToolAction)
         toolbar.setObjectName("toolsToolbar")
-        self.addToolBar(toolbar)
+        #self.addToolBar(toolbar)
         penToolAction.setShortcut('1')
         pipetteToolAction.setShortcut('2')
         fillToolAction.setShortcut('3')
@@ -619,35 +647,35 @@ class MainWindow(QMainWindow):
     ######## Toolbar #####################################################
     def penToolAction(self):
         self.project.tool = "pen"
-        self.project.toolChangedSign.emit()
+        self.project.toolChanged.emit()
         self.optionsWidget.optionFill.hide()
         self.optionsWidget.optionSelect.hide()
         self.optionsWidget.optionMove.hide()
 
     def pipetteToolAction(self):
         self.project.tool = "pipette"
-        self.project.toolChangedSign.emit()
+        self.project.toolChanged.emit()
         self.optionsWidget.optionFill.hide()
         self.optionsWidget.optionSelect.hide()
         self.optionsWidget.optionMove.hide()
 
     def fillToolAction(self):
         self.project.tool = "fill"
-        self.project.toolChangedSign.emit()
+        self.project.toolChanged.emit()
         self.optionsWidget.optionFill.show()
         self.optionsWidget.optionSelect.hide()
         self.optionsWidget.optionMove.hide()
 
     def moveToolAction(self):
         self.project.tool = "move"
-        self.project.toolChangedSign.emit()
+        self.project.toolChanged.emit()
         self.optionsWidget.optionFill.hide()
         self.optionsWidget.optionSelect.hide()
         self.optionsWidget.optionMove.show()
 
     def selectToolAction(self):
         self.project.tool = "select"
-        self.project.toolChangedSign.emit()
+        self.project.toolChanged.emit()
         self.optionsWidget.optionFill.hide()
         self.optionsWidget.optionSelect.show()
         self.optionsWidget.optionMove.hide()

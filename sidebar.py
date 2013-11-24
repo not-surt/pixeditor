@@ -5,6 +5,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 import math
+import random
 
 from widget import Button, Viewer
 from colorPicker import ColorDialog
@@ -13,7 +14,7 @@ from FlowLayout import FlowLayout
 
 class ToolWidget(QWidget):
     def __init__(self, parent=None):
-        super(QWidget, self).__init__(parent)
+        super(ToolWidget, self).__init__(parent)
         layout = FlowLayout()
         #layout = QHBoxLayout()
         #layout.setSizeConstraint(QLayout.SetFixedSize)
@@ -23,7 +24,6 @@ class ToolWidget(QWidget):
         pass
 
     def addAction(self, action):
-        #super(QWidget, self).addAction(action)
         self.parent().addAction(action)
         button = QToolButton(self)
         button.setDefaultAction(action)
@@ -37,7 +37,7 @@ class ToolWidget(QWidget):
 
 class ColorComponentSlider(QSlider):
     def __init__(self, component, orientation=Qt.Horizontal, parent=None):
-        super(QSlider, self).__init__(orientation, parent)
+        super(ColorComponentSlider, self).__init__(orientation, parent)
         self.component = component
         pass
 
@@ -47,7 +47,7 @@ class ColorComponentPlane(QSlider):
         pass
 
 
-class ColorWidget(QWidget):
+class ColorSlidersWidget(QWidget):
     colorChanged = pyqtSignal(QColor)
     colorComponentChanged = pyqtSignal(str, int)
 
@@ -55,33 +55,43 @@ class ColorWidget(QWidget):
         return self.__color
 
     def setColor(self, value):
-        if self.__color != value:
+        if value.isValid() and self.__color != value:
             self.__color = value
             self.colorChanged.emit(self.__color)
 
     pyqtProperty(QColor, color, setColor)
 
-    def setColorComponent(self, component, value):
+    def setColorComponent(self, component, componentValue):
         color = QColor(self.__color)
-        if component == "hue" or component == "saturation" or component == "lightness":
-            hue, saturation, lightness, _ = color.getHsl()
+        if component == "hue" or component == "saturation" or component == "value" or component == "lightness":
+            hue, saturation, value, _ = color.getHsv()
+        if component == "cyan" or component == "magenta" or component == "yellow" or component == "black":
+           cyan, magenta, yellow, black, _ = color.getCmyk()
         if component == "red":
-            color.setRed(value)
+            color.setRed(componentValue)
         elif component == "green":
-            color.setGreen(value)
+            color.setGreen(componentValue)
         elif component == "blue":
-            color.setBlue(value)
+            color.setBlue(componentValue)
         elif component == "hue":
-            color.setHsl(value, saturation, lightness)
+            color.setHsv(componentValue, saturation, value)
         elif component == "saturation":
-            color.setHsl(hue, value, lightness)
+            color.setHsv(hue, componentValue, value)
+        elif component == "value":
+            color.setHsv(hue, saturation, componentValue)
         elif component == "lightness":
-            color.setHsl(hue, saturation, value)
+            color.setHsl(hue, saturation, componentValue)
+        elif component == "cyan":
+            color.setCmyk(componentValue, magenta, yellow, black)
+        elif component == "magenta":
+            color.setCmyk(cyan, componentValue, yellow, black)
+        elif component == "yellow":
+            color.setCmyk(cyan, magenta, componentValue, black)
+        elif component == "black":
+            color.setCmyk(cyan, magenta, yellow, componentValue)
         self.setColor(color)
 
     def getColorComponent(color, component):
-        if component == "hue" or component == "saturation" or component == "lightness":
-            hue, saturation, lightness, _ = color.getHsl()
         if component == "red":
             return color.red()
         elif component == "green":
@@ -89,29 +99,32 @@ class ColorWidget(QWidget):
         elif component == "blue":
             return color.blue()
         elif component == "hue":
-            return hue
+            return color.getHsv()[0]
         elif component == "saturation":
-            return saturation
+            return color.getHsv()[1]
+        elif component == "value":
+            return color.getHsv()[2]
         elif component == "lightness":
-            return lightness
+            return color.getHsl()[2]
+        elif component == "cyan":
+            return color.getCmyk()[0]
+        elif component == "magenta":
+            return color.getCmyk()[1]
+        elif component == "yellow":
+            return color.getCmyk()[2]
+        elif component == "black":
+            return color.getCmyk()[3]
 
-    def __init__(self, parent=None):
-        super(QWidget, self).__init__(parent)
+    def __init__(self, components, parent=None):
+        super(ColorSlidersWidget, self).__init__(parent)
 
         self.__color = QColor()
-
-        components = ["red", "green", "blue", None, "hue", "saturation", "lightness"]
-        #labels = ["Red", "Green", "Blue", None, "Hue", "Saturation", "Lightness"]
-        labels = ["R", "G", "B", None, "H", "S", "L"]
-        ranges = [(0, 255), (0, 255), (0, 255), None, (0, 359), (0, 255), (0, 255)]
 
         layout = QGridLayout()
         layout.setSpacing(0)
         layout.setSizeConstraint(QLayout.SetMinimumSize)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
-        self.sliders = []
-        self.spins = []
         for i in range(0, len(components)):
             if components[i] is None:
                 separator = QFrame()
@@ -120,28 +133,47 @@ class ColorWidget(QWidget):
                 layout.addWidget(separator, i, 0, 1, 3)
             else:
                 slider = QSlider(Qt.Horizontal, self)
-                slider.setRange(*ranges[i])
+                # Range
+                componentRange = (0, 255) if components[i][2] is None else components[i][2]
+                slider.setRange(*componentRange)
+                slider.setTickInterval((componentRange[1] - componentRange[0]) // 8)
+                # Step
+                if components[i][3] is None:
+                    slider.setSingleStep(1)
+                    slider.setPageStep(8)
+                else:
+                    slider.setSingleStep(components[i][3][0])
+                    slider.setPageStep(components[i][3][1])
                 slider.setTracking(True)
 
                 spin = QSpinBox(self)
                 spin.setRange(slider.minimum(), slider.maximum())
 
-                def setColorComponentWrapper(value, widget=self, component=components[i]):
-                    componentValue = ColorWidget.getColorComponent(widget.color(), component)
+                def setColorComponentWrapper(value, widget=self, component=components[i][0]):
+                    componentValue = ColorSlidersWidget.getColorComponent(widget.color(), component)
                     if componentValue != value:
                         widget.setColorComponent(component, value)
 
-                def setValueWrapper(color, slider=slider, component=components[i]):
-                    componentValue = ColorWidget.getColorComponent(color, component)
-                    if slider.value() != componentValue:
-                        slider.setValue(componentValue)
+                def setSliderValueWrapper(color, widget=slider, component=components[i][0]):
+                    componentValue = ColorSlidersWidget.getColorComponent(color, component)
+                    if widget.value() != componentValue:
+                        widget.setValue(componentValue)
+
+                def setSpinValueWrapper(color, widget=spin, component=components[i][0]):
+                    componentValue = ColorSlidersWidget.getColorComponent(color, component)
+                    if widget.value() != componentValue:
+                        widget.setValue(componentValue)
 
                 slider.valueChanged.connect(setColorComponentWrapper)
-                self.colorChanged.connect(setValueWrapper)
-                slider.valueChanged.connect(spin.setValue)
-                spin.valueChanged.connect(slider.setValue)
+                self.colorChanged.connect(setSliderValueWrapper)
+                spin.valueChanged.connect(setColorComponentWrapper)
+                self.colorChanged.connect(setSpinValueWrapper)
+                #slider.valueChanged.connect(lambda value, widget=self, i=i, components=components, component=components[i][0]: widget.setColorComponent(component, value))
+                #self.colorChanged.connect(lambda color, widget=slider, i=i, components=components, component=components[i][0]: widget.setValue(ColorSlidersWidget.getColorComponent(color, component)))
+                #spin.valueChanged.connect(lambda value, widget=self, i=i, components=components, component=components[i][0]: widget.setColorComponent(component, value))
+                #self.colorChanged.connect(lambda color, widget=spin, i=i, components=components, component=components[i][0]: widget.setValue(ColorSlidersWidget.getColorComponent(color, component)))
 
-                label = QLabel(labels[i], self)
+                label = QLabel(components[i][1], self)
                 label.setAlignment(Qt.AlignRight)
                 label.setBuddy(slider)
 
@@ -149,8 +181,38 @@ class ColorWidget(QWidget):
                 layout.addWidget(slider, i, 1)
                 layout.addWidget(spin, i, 2)
 
-                self.sliders.append(slider)
-                self.spins.append(spin)
+
+class RgbSlidersWidget(ColorSlidersWidget):
+    components = [("red", "R", None, None),
+                  ("green", "G", None, None),
+                  ("blue", "B", None, None)]
+    def __init__(self, parent=None):
+        super(RgbSlidersWidget, self).__init__(RgbSlidersWidget.components, parent)
+
+
+class HsvSlidersWidget(ColorSlidersWidget):
+    components = [("hue", "H", (0, 359), None),
+                  ("saturation", "S", None, None),
+                  ("value", "V", None, None)]
+    def __init__(self, parent=None):
+        super(HsvSlidersWidget, self).__init__(HsvSlidersWidget.components, parent)
+
+
+class HslSlidersWidget(ColorSlidersWidget):
+    components = [("hue", "H", (0, 359), None),
+                  ("saturation", "S", None, None),
+                  ("lightness", "L", None, None)]
+    def __init__(self, parent=None):
+        super(HslSlidersWidget, self).__init__(HslSlidersWidget.components, parent)
+
+
+class CmykSlidersWidget(ColorSlidersWidget):
+    components = [("cyan", "C", None, None),
+                  ("magenta", "M", None, None),
+                  ("yellow", "Y", None, None),
+                  ("black", "K", None, None)]
+    def __init__(self, parent=None):
+        super(CmykSlidersWidget, self).__init__(CmykSlidersWidget.components, parent)
 
 
 class PaletteCanvas(QWidget):
@@ -310,7 +372,7 @@ class PaletteCanvas(QWidget):
         x, y = (x - self.swatchHorizontalPadding) // self.swatchOffsetX, (
                                                                          y - self.swatchVerticalPadding) // self.swatchOffsetY
         s = self.swatchGridToIndex(x, y)
-        if s >= 0 and s < len(self.parent.project.colorTable):
+        if s != None and s >= 0 and s < len(self.parent.project.colorTable):
             return s
         return None
 
