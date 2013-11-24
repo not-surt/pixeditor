@@ -403,6 +403,11 @@ class MainWindow(QMainWindow):
         optionsDock.setObjectName("optionsDock")
         self.addDockWidget(Qt.LeftDockWidgetArea, optionsDock)
 
+        paletteDock = QDockWidget("Palette")
+        paletteDock.setWidget(self.paletteWidget)
+        paletteDock.setObjectName("paletteDock")
+        self.addDockWidget(Qt.LeftDockWidgetArea, paletteDock)
+
         #colorDialogDock = QDockWidget("Color Dialog")
         #colorDialogDock.setWidget(self.colorDialog)
         #colorDialogDock.setObjectName("colorDialog")
@@ -432,11 +437,6 @@ class MainWindow(QMainWindow):
         self.tabifyDockWidget(hsvDock, hslDock)
         self.tabifyDockWidget(hslDock, cmykDock)
         rgbDock.raise_()
-
-        paletteDock = QDockWidget("Palette")
-        paletteDock.setWidget(self.paletteWidget)
-        paletteDock.setObjectName("paletteDock")
-        self.addDockWidget(Qt.LeftDockWidgetArea, paletteDock)
 
         timelineDock = Dock("Timeline")
         timelineDock.setWidget(self.timelineWidget)

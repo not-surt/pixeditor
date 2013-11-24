@@ -45,8 +45,9 @@ class Project(QObject):
         if colorTable:
             self.colorTable = colorTable
         else:
-            self.colorTable = [qRgba(0, 0, 0, 0), qRgb(0, 0, 0)]
+            self.colorTable = [qRgb(0, 0, 0), qRgb(255, 255, 255)]
         self.color = 1
+        self.transparent = 0
         if frames:
             self.timeline = Timeline(self, [Layer(self, frames, 'import')])
         else:
@@ -75,11 +76,21 @@ class Project(QObject):
         self.fps = int(rootElem.find("fps").attrib["fps"])
         colorTableElem = rootElem.find("colortable").text
         self.colorTable = [int(n) for n in colorTableElem.split(',')]
+        try:
+            self.transparent = int(rootElem.attrib["transparent"])
+        except:
+            pass
         timelineElem = rootElem.find("timeline")
         self.timeline = Timeline(self, [])
         for layerElem in timelineElem:
+            transparent = 0
+            try:
+                transparent = int(layerElem.attrib["transparent"])
+            except:
+                pass
             layer = Layer(self, [], str(layerElem.attrib["name"]),
-                          bool(int(layerElem.attrib["visible"])))
+                          bool(int(layerElem.attrib["visible"])),
+                          transparent)
             for f in layerElem.itertext():
                 if f == "0":
                     layer.append(False)
@@ -97,6 +108,10 @@ class Project(QObject):
         self.size = QSize(int(sizeElem["width"]), int(sizeElem["height"]))
         colorTableElem = rootElem.find("colors").text
         self.colorTable = [int(n) for n in colorTableElem.split(',')]
+        try:
+            self.transparent = int(rootElem.attrib["transparent"])
+        except:
+            pass
         framesElem = rootElem.find("frames")
         self.timeline = Timeline(self, [])
         for layerElem in framesElem:
@@ -114,7 +129,7 @@ class Project(QObject):
         self.updateTimelineSizeSign.emit()
 
     def exportXml(self):
-        rootElem = ET.Element("pix", version="0.3")
+        rootElem = ET.Element("pix", version="0.3", transparent=str(int(self.transparent)))
         ET.SubElement(rootElem, "size",
                       width=str(self.size.width()),
                       height=str(self.size.height()))
@@ -129,6 +144,7 @@ class Project(QObject):
             layerElem = ET.SubElement(timelineElem, "layer")
             layerElem.attrib["name"] = layer.name
             layerElem.attrib["visible"] = str(int(layer.visible))
+            layerElem.attrib["transparent"] = str(int(layer.transparent))
             for frame in layer:
                 frameElem = ET.SubElement(layerElem, "frame")
                 if frame:
@@ -425,11 +441,12 @@ class Timeline(list):
 
 
 class Layer(list):
-    def __init__(self, project, frames=[], name='', visible=True):
+    def __init__(self, project, frames=[], name='', visible=True, transparent=0):
         list.__init__(self, frames)
         self.project = project
         self.name = name
         self.visible = visible
+        self.transparent = transparent
 
     def copy(self):
         return Layer(self.project, self, self.name)

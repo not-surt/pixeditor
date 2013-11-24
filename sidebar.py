@@ -84,8 +84,8 @@ class ToolWidget(QWidget):
         button = QToolButton(self)
         button.setDefaultAction(action)
         button.setAutoRaise(True)
-        iconSize = QApplication.style().pixelMetric(QStyle.PM_ToolBarIconSize)
-        size = QApplication.style().sizeFromContents(QStyle.CT_ToolButton, QStyleOptionToolButton(), QSize(iconSize, iconSize))
+        iconSize = self.style().pixelMetric(QStyle.PM_ToolBarIconSize)
+        size = self.style().sizeFromContents(QStyle.CT_ToolButton, QStyleOptionToolButton(), QSize(iconSize, iconSize))
         button.setIconSize(QSize(iconSize, iconSize))
         button.setFixedSize(size)
         self.layout().addWidget(button)
@@ -100,6 +100,7 @@ class ColorComponentSlider(QSlider):
 
     def setColor(self, color):
         if color.isValid() and self.__color != color:
+            self.startColor = color
             self.__color = color
             self.colorChanged.emit(self.__color)
             self.setValue(getColorComponent(self.__color, self.__component))
@@ -110,6 +111,7 @@ class ColorComponentSlider(QSlider):
         super(ColorComponentSlider, self).__init__(orientation, parent)
         self.__component = component
         self.__color = QColor()
+        self.startColor = QColor()
         self.colorChanged.connect(self.update)
         pass
 
@@ -135,11 +137,12 @@ class ColorComponentSlider(QSlider):
             painter.fillRect(i, 0, 1, self.height(), color)
             pass
         i = (self.value() - self.minimum()) / (self.maximum() - self.minimum()) * (self.width() - 1)
+        handleSize = 2
         halfHeight = self.height() // 2
-        painter.fillRect(i - 1, 0, 1, halfHeight, QColor(Qt.black))
-        painter.fillRect(i, 0, 1, halfHeight, QColor(Qt.white))
-        painter.fillRect(i - 1, halfHeight, 1, halfHeight, QColor(Qt.white))
-        painter.fillRect(i, halfHeight, 1, halfHeight, QColor(Qt.black))
+        painter.fillRect(i - handleSize, 0, handleSize, halfHeight, QColor(Qt.black))
+        painter.fillRect(i, 0, handleSize, halfHeight, QColor(Qt.white))
+        painter.fillRect(i - handleSize, halfHeight, handleSize, halfHeight, QColor(Qt.white))
+        painter.fillRect(i, halfHeight, handleSize, halfHeight, QColor(Qt.black))
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -321,7 +324,7 @@ class PaletteCanvas(QWidget):
 
     def paintEvent(self, ev=''):
         p = QPainter(self)
-        p.fillRect(0, 0, self.width(), self.height(), self.background)
+        #p.fillRect(0, 0, self.width(), self.height(), self.background)
         for n, i in enumerate(self.parent.project.colorTable):
             rect = self.swatchRect(*(self.swatchIndexToGrid(n)))
             color = QColor().fromRgba(i)
@@ -695,9 +698,12 @@ class PaletteWidget(QWidget):
         self.paletteCanvas.update()
         self.project.colorChanged.emit()
 
-    def editColor(self, n):
+    def colorDialog(self):
         current = self.project.colorTable[self.project.color]
-        color = QColorDialog.getColor(QColor(current), self, None, QColorDialog.ShowAlphaChannel)
+        return QColorDialog.getColor(QColor(current), self)
+
+    def editColor(self, n):
+        color = self.colorDialog()
         if not color.isValid():
             return
         self.project.saveToUndo("colorTable")
@@ -707,9 +713,8 @@ class PaletteWidget(QWidget):
     def addColor(self):
         """ select a color and add it to the palette"""
         if not len(self.project.colorTable) >= 256:
-            col = self.project.colorTable[self.project.color]
-            ok, color = ColorDialog(False, col).getRgba()
-            if not ok:
+            color = self.colorDialog()
+            if not color.isValid():
                 return
             self.project.saveToUndo("colorTable_frames")
             self.project.colorTable.append(color)
@@ -744,7 +749,7 @@ class ContextWidget(QWidget):
         ### Layout ###
         layout = QHBoxLayout()
         layout.setSpacing(0)
-        layout.setSizeConstraint(QLayout.SetFixedSize)
+        #layout.setSizeConstraint(QLayout.SetFixedSize)
         layout.addWidget(self.penWidget)
         layout.addWidget(self.brushWidget)
         layout.addStretch()
@@ -766,7 +771,7 @@ class OptionsWidget(QWidget):
         ### Layout ###
         layout = QVBoxLayout()
         layout.setSpacing(0)
-        layout.setSizeConstraint(QLayout.SetFixedSize)
+        #layout.setSizeConstraint(QLayout.SetFixedSize)
         layout.addWidget(self.optionFill)
         self.optionFill.hide()
         layout.addWidget(self.optionSelect)
