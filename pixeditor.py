@@ -31,6 +31,7 @@ from timeline import TimelineWidget
 from sidebar import *
 from dialogs import *
 from widget import Dock
+from colorWidgets import *
 from import_export import *
 from widget import Background
 
@@ -436,6 +437,8 @@ class MainWindow(QMainWindow):
         self.tabifyDockWidget(rgbDock, hsvDock)
         self.tabifyDockWidget(hsvDock, hslDock)
         self.tabifyDockWidget(hslDock, cmykDock)
+        hsvDock.close()
+        cmykDock.close()
         rgbDock.raise_()
 
         timelineDock = Dock("Timeline")
@@ -485,6 +488,8 @@ class MainWindow(QMainWindow):
 
         ### File menu ###
         menubar = self.menuBar()
+        newAction = QAction('&New', self)
+        newAction.triggered.connect(self.newAction)
         openAction = QAction('&Open', self)
         openAction.triggered.connect(self.openAction)
         openAction.setShortcut(QKeySequence.Open)
@@ -508,6 +513,7 @@ class MainWindow(QMainWindow):
         exitAction.setShortcut(QKeySequence.Quit)
 
         fileMenu = menubar.addMenu('&File')
+        fileMenu.addAction(newAction)
         fileMenu.addAction(openAction)
         fileMenu.addAction(saveAsAction)
         fileMenu.addAction(saveAction)
@@ -562,14 +568,12 @@ class MainWindow(QMainWindow):
         for dock in dockWidgets:
             viewMenu.addAction(dock.toggleViewAction())
         viewMenu.addSeparator()
-        lockLayoutAction = QAction('&Lock Layout', self)
-        lockLayoutAction.setCheckable(True)
-        lockLayoutAction.triggered.connect(lambda: self.lockLayoutAction(lockLayoutAction))
-        viewMenu.addAction(lockLayoutAction)
+        self.lockLayoutAction = QAction('&Lock Layout', self)
+        self.lockLayoutAction.setCheckable(True)
+        self.lockLayoutAction.triggered.connect(lambda checked, widget=self: widget.setLayoutLocked(checked))
+        viewMenu.addAction(self.lockLayoutAction)
 
         ### project menu ###
-        newAction = QAction('&New', self)
-        newAction.triggered.connect(self.newAction)
         cropAction = QAction('&Crop', self)
         cropAction.triggered.connect(self.cropAction)
         resizeAction = QAction('&Resize', self)
@@ -580,7 +584,6 @@ class MainWindow(QMainWindow):
         prefAction.triggered.connect(self.backgroundAction)
 
         projectMenu = menubar.addMenu('&Project')
-        projectMenu.addAction(newAction)
         projectMenu.addAction(cropAction)
         projectMenu.addAction(resizeAction)
         projectMenu.addSeparator()
@@ -629,6 +632,7 @@ class MainWindow(QMainWindow):
         settings.beginGroup("mainWindow")
         settings.setValue("geometry", self.saveGeometry())
         settings.setValue("windowState", self.saveState())
+        settings.setValue("layoutLocked", self.lockLayoutAction.isChecked())
         settings.endGroup()
 
     def readSettings(self):
@@ -642,6 +646,13 @@ class MainWindow(QMainWindow):
             self.restoreState(settings.value("windowState"))
         except TypeError:
             pass # no state to restore so leave as is
+        try:
+            self.lockLayoutAction.setChecked(settings.value("layoutLocked", type=bool))
+            self.setLayoutLocked(self.lockLayoutAction.isChecked())
+            #if self.lockLayoutAction.isChecked():
+                #self.lockLayoutAction.trigger() # why no work?
+        except TypeError:
+            pass
         settings.endGroup()
 
     ######## Toolbar #####################################################
@@ -756,10 +767,10 @@ class MainWindow(QMainWindow):
             qApp.quit()
 
     ######## View menu ##############################################
-    def lockLayoutAction(self, action):
+    def setLayoutLocked(self, isLocked):
         widgets = self.findChildren(QDockWidget) + self.findChildren(QToolBar)
         for widget in widgets:
-            if action.isChecked():
+            if isLocked is True:
                 if widget.isFloating():
                     if isinstance(widget, QDockWidget):
                         widget.setTitleBarWidget(None)
